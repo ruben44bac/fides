@@ -21,7 +21,7 @@ defmodule Fides.Origination.Lifecycle do
   Pure functions, so every rule can be checked without a database.
   """
 
-  use Boundary, type: :strict, deps: [], exports: [Transition]
+  use Boundary, type: :strict, deps: [], exports: [Transition, Diagram]
 
   alias Fides.Origination.Lifecycle.Transition
   alias Fides.Origination.Lifecycle.Variants

@@ -53,6 +53,7 @@ jobs:
       - run: mix credo
       - run: mix sobelow --exit low --skip
       - run: mix fides.gen.inventory --check
+      - run: mix fides.gen.lifecycles --check
 
   test:
     name: Tests and coverage
