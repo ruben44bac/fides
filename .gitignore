@@ -35,3 +35,6 @@ fides-*.tar
 npm-debug.log
 /assets/node_modules/
 
+/docs
+# Dialyzer PLTs
+/priv/plts/
