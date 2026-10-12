@@ -13,7 +13,7 @@ defmodule Fides.Risk.Engine.Policies.MX do
 
   @impl true
   def default_params do
-    %{min_income_percent_of_amount: 20, countersign_above_minor: 100_000_000}
+    %{min_income_percent_of_amount: 20}
   end
 
   @impl true

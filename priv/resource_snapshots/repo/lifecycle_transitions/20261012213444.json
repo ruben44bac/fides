@@ -1,0 +1,116 @@
+{
+  "attributes": [
+    {
+      "allow_nil?": false,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": true,
+      "references": null,
+      "scale": null,
+      "size": 2,
+      "source": "country_code",
+      "type": "varchar"
+    },
+    {
+      "allow_nil?": false,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": true,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "from_state",
+      "type": "text"
+    },
+    {
+      "allow_nil?": false,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": true,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "to_state",
+      "type": "text"
+    },
+    {
+      "allow_nil?": false,
+      "default": "fragment(\"(now() AT TIME ZONE 'utc')\")",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "inserted_at",
+      "type": "timestamptz(6)"
+    },
+    {
+      "allow_nil?": false,
+      "default": "fragment(\"(now() AT TIME ZONE 'utc')\")",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "updated_at",
+      "type": "timestamptz(6)"
+    }
+  ],
+  "base_filter": null,
+  "check_constraints": [],
+  "create_table_options": null,
+  "custom_indexes": [],
+  "custom_statements": [
+    {
+      "after_tables": [
+        "countries"
+      ],
+      "code?": false,
+      "down": "ALTER TABLE lifecycle_transitions DROP CONSTRAINT lifecycle_transitions_country_code_fkey",
+      "global?": false,
+      "name": "country_foreign_key",
+      "up": "ALTER TABLE lifecycle_transitions ADD CONSTRAINT lifecycle_transitions_country_code_fkey FOREIGN KEY (country_code) REFERENCES countries (code)"
+    },
+    {
+      "after_tables": [],
+      "code?": false,
+      "down": "DROP TRIGGER lifecycle_transitions_immutable_columns ON lifecycle_transitions",
+      "global?": false,
+      "name": "immutable_columns",
+      "up": "CREATE TRIGGER lifecycle_transitions_immutable_columns BEFORE UPDATE ON lifecycle_transitions\nFOR EACH ROW EXECUTE FUNCTION fides_forbid_column_change('country_code')\n"
+    },
+    {
+      "after_tables": [],
+      "code?": true,
+      "down": "Carbonite.Migrations.drop_trigger(\"lifecycle_transitions\")",
+      "global?": false,
+      "name": "carbonite_capture",
+      "up": "Carbonite.Migrations.create_trigger(\"lifecycle_transitions\")\nCarbonite.Migrations.put_trigger_config(\"lifecycle_transitions\", :primary_key_columns, [\"country_code\", \"from_state\", \"to_state\"])"
+    },
+    {
+      "after_tables": [],
+      "code?": false,
+      "down": "ALTER TABLE lifecycle_transitions\n  DROP CONSTRAINT lifecycle_transitions_to_state_fkey,\n  DROP CONSTRAINT lifecycle_transitions_from_state_fkey\n",
+      "global?": false,
+      "name": "state_foreign_keys",
+      "up": "ALTER TABLE lifecycle_transitions\n  ADD CONSTRAINT lifecycle_transitions_from_state_fkey\n    FOREIGN KEY (country_code, from_state) REFERENCES lifecycle_states (country_code, state),\n  ADD CONSTRAINT lifecycle_transitions_to_state_fkey\n    FOREIGN KEY (country_code, to_state) REFERENCES lifecycle_states (country_code, state)\n"
+    }
+  ],
+  "has_create_action": true,
+  "hash": "789B150294215F7D7EE616E5AACBFC04C90C2691A5C7B482E6F5D91310C2E12E",
+  "identities": [],
+  "multitenancy": {
+    "attribute": "country_code",
+    "global": false,
+    "strategy": "attribute"
+  },
+  "repo": "Elixir.Fides.Platform.Repo",
+  "schema": null,
+  "table": "lifecycle_transitions",
+  "temporal": null
+}

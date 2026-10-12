@@ -7,6 +7,18 @@ defmodule Fides.Origination.LifecycleTest do
   @humans [:applicant, :analyst, :risk_manager]
   @within %{amount_minor: 4_000, countersign_above_minor: 5_000}
   @above %{amount_minor: 6_000, countersign_above_minor: 5_000}
+  @countersign ~w(ES PT IT)
+  @effect_kinds [
+    :transition,
+    :agent,
+    :timeout,
+    :retry,
+    :queue,
+    :capability,
+    :webhook,
+    :notice,
+    :alert
+  ]
 
   test "a transition the life cycle does not allow fails with the valid ones" do
     assert Lifecycle.transition("MX", :submitted, :approved, :system) ==
@@ -39,43 +51,135 @@ defmodule Fides.Origination.LifecycleTest do
 
   test "every open state can be cancelled by the applicant and by an analyst" do
     for country <- Lifecycle.countries(),
-        state <- Lifecycle.states() -- Lifecycle.final_states(),
+        state <- Lifecycle.states(country) -- Lifecycle.final_states(),
         actor <- [:applicant, :analyst] do
       assert Lifecycle.transition(country, state, :cancelled, actor) == {:ok, :cancelled}
     end
   end
 
-  test "reevaluation returns to evaluating only from review, and only by the system" do
+  test "evaluation follows the bank data, and returns from review only by the system" do
     for country <- Lifecycle.countries() do
       into_evaluating =
         for %{to: :evaluating} = transition <- Lifecycle.transitions(country),
             do: {transition.from, transition.actors}
 
-      assert Enum.sort(into_evaluating) == [awaiting_bank_data: [:system], in_review: [:system]]
+      bank_data =
+        if Lifecycle.bank_data(country) == :sync,
+          do: :awaiting_bank_data,
+          else: :awaiting_bank_callback
+
+      assert Enum.sort(into_evaluating) ==
+               Enum.sort([{bank_data, [:system]}, in_review: [:system]])
     end
   end
 
-  test "an analyst's approval above the countersign threshold needs a risk manager" do
-    assert :approved in Lifecycle.available("ES", :in_review, :analyst, @within)
-    refute :pending_countersign in Lifecycle.available("ES", :in_review, :analyst, @within)
+  describe "each country" do
+    test "has only the states of its variant" do
+      for country <- Lifecycle.countries() do
+        states = Lifecycle.states(country)
 
-    assert :pending_countersign in Lifecycle.available("ES", :in_review, :analyst, @above)
-    refute :approved in Lifecycle.available("ES", :in_review, :analyst, @above)
+        assert :awaiting_bank_callback in states == (Lifecycle.bank_data(country) == :async)
+        assert :pending_countersign in states == Lifecycle.countersign?(country)
+      end
 
-    assert Lifecycle.available("ES", :pending_countersign, :risk_manager) == [
-             :approved,
-             :in_review
-           ]
+      assert Enum.map(Lifecycle.countries(), &{&1, Lifecycle.bank_data(&1)}) == [
+               {"ES", :sync},
+               {"PT", :sync},
+               {"IT", :sync},
+               {"MX", :async},
+               {"CO", :sync},
+               {"BR", :sync}
+             ]
 
-    assert Lifecycle.available("ES", :pending_countersign, :analyst) == [:cancelled]
+      assert Enum.filter(Lifecycle.countries(), &Lifecycle.countersign?/1) == @countersign
+    end
+
+    test "refuses a move into a state its variant does not have" do
+      assert {:error, {:not_allowed, available}} =
+               Lifecycle.transition("ES", :awaiting_bank_data, :awaiting_bank_callback, :system)
+
+      assert :evaluating in available
+
+      assert {:error, {:not_allowed, _available}} =
+               Lifecycle.transition("MX", :in_review, :pending_countersign, :analyst, @above)
+    end
+
+    test "states its effects on entering each of its states, and no others" do
+      for country <- Lifecycle.countries() do
+        effects = Lifecycle.effects(country)
+        assert Enum.sort(Map.keys(effects)) == Enum.sort(Lifecycle.states(country)), country
+
+        for {_state, list} <- effects, {kind, name} <- list do
+          assert kind in @effect_kinds
+          assert is_atom(name)
+        end
+      end
+
+      assert Lifecycle.effects("MX").awaiting_bank_callback == [timeout: :bank_callback]
+      assert Lifecycle.effects("ES").pending_countersign == [queue: :countersign]
+      assert Lifecycle.effects("CO").evaluating == [agent: :risk]
+    end
+
+    test "is one Fides operates in" do
+      assert_raise ArgumentError, ~r/"FR" has no life cycle/, fn ->
+        Lifecycle.transitions("FR")
+      end
+    end
   end
 
-  test "without the amount and threshold neither approval path is available" do
-    available = Lifecycle.available("BR", :in_review, :analyst)
+  test "in Mexico the bank data arrives later: the application waits for the provider's webhook" do
+    assert Lifecycle.available("MX", :awaiting_bank_data, :system) == [
+             :awaiting_bank_callback,
+             :provider_error
+           ]
 
-    refute :approved in available
-    refute :pending_countersign in available
-    assert :rejected in available
+    assert Lifecycle.available("MX", :awaiting_bank_callback, :system) == [
+             :evaluating,
+             :provider_error
+           ]
+
+    assert Lifecycle.available("ES", :awaiting_bank_data, :system) == [
+             :evaluating,
+             :provider_error
+           ]
+  end
+
+  describe "an analyst's approval" do
+    test "above the countersign threshold needs a risk manager, where the country has one" do
+      for country <- @countersign do
+        assert :approved in Lifecycle.available(country, :in_review, :analyst, @within)
+        refute :pending_countersign in Lifecycle.available(country, :in_review, :analyst, @within)
+
+        assert :pending_countersign in Lifecycle.available(country, :in_review, :analyst, @above)
+        refute :approved in Lifecycle.available(country, :in_review, :analyst, @above)
+
+        assert Lifecycle.available(country, :pending_countersign, :risk_manager) == [
+                 :approved,
+                 :in_review
+               ]
+
+        assert Lifecycle.available(country, :pending_countersign, :analyst) == [:cancelled]
+      end
+    end
+
+    test "is final with any amount where the country has no countersignature" do
+      for country <- Lifecycle.countries() -- @countersign, context <- [%{}, @within, @above] do
+        assert Lifecycle.available(country, :in_review, :analyst, context) == [
+                 :approved,
+                 :rejected,
+                 :info_requested,
+                 :cancelled
+               ]
+      end
+    end
+
+    test "is not available without the amount and threshold, where the country countersigns" do
+      available = Lifecycle.available("ES", :in_review, :analyst)
+
+      refute :approved in available
+      refute :pending_countersign in available
+      assert :rejected in available
+    end
   end
 
   property "random sequences of transitions never leave a final state or skip the life cycle" do
@@ -105,6 +209,7 @@ defmodule Fides.Origination.LifecycleTest do
           {:ok, ^target} ->
             refute Lifecycle.final?(state)
             assert target in available
+            assert target in Lifecycle.states(country)
 
             assert Enum.any?(
                      Lifecycle.transitions(country),

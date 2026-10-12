@@ -49,6 +49,41 @@ defmodule Mix.Tasks.Fides.AdvanceTest do
              current_carbonite_transaction().meta
   end
 
+  test "follows each country's life cycle: in Mexico, through the provider's webhook", ctx do
+    Factory.policy_in_force("MX", ctx.admin)
+    analyst = Factory.scoped_staff("MX", :analyst, ctx.admin)
+
+    submission = %{
+      amount_minor: 10_000_000,
+      monthly_income_minor: 3_000_000,
+      currency: "MXN",
+      channel: :api,
+      consent_text_version: "2026-10",
+      holder: %{
+        document_type: "CURP",
+        document: "HEGG560427MVZRRL04",
+        given_names: "Gloria",
+        first_surname: "Hernández",
+        second_surname: "García",
+        birth_date: ~D[1956-04-27],
+        email: "gloria@example.com"
+      }
+    }
+
+    application =
+      Factory.insert(fn ->
+        Origination.submit_application!(submission, tenant: "MX", actor: analyst)
+      end)
+
+    Advance.run([application.id])
+
+    moves =
+      "#{application.id}: submitted → validating → awaiting_bank_data → " <>
+        "awaiting_bank_callback → evaluating → in_review, at lock_version 6"
+
+    assert_received {:mix_shell, :info, [^moves]}
+  end
+
   test "continues from where an application is, and stops where only people move it", ctx do
     Factory.policy_in_force("ES", ctx.admin)
     application = submit(ctx)

@@ -4,11 +4,12 @@ defmodule Fides.Origination.CreditApplication do
   for people, a reason; never through an edit.
 
   Its amount and income are copies of its current revision, and revisions are
-  append-only. A holder has at most one application that is not final, final states
-  never change, and every change increments `lock_version`, which commands compare
-  with the version they expect. A rejected or cancelled application can be retried
-  once, as a new application of the same holder. The database enforces all of this
-  as well.
+  append-only. A holder has at most one application that is not final. An
+  application starts in submitted, is only ever in a state of its country's life
+  cycle and only moves along one of its transitions; final states never change. Every
+  change increments `lock_version`, which commands compare with the version they
+  expect. A rejected or cancelled application can be retried once, as a new
+  application of the same holder. The database enforces all of this as well.
   """
 
   use Fides.Platform.Resource,
@@ -46,7 +47,8 @@ defmodule Fides.Origination.CreditApplication do
       {:previous_application_id, "credit_applications_previous_fkey",
        "is not an application of the same holder"},
       {:policy_version_id, "credit_applications_policy_version_fkey",
-       "is not a policy version of the country"}
+       "is not a policy version of the country"},
+      {:state, "credit_applications_state_fkey", "is not a state of the country's life cycle"}
     ]
 
     migration_types currency: {:varchar, 3}
@@ -61,6 +63,12 @@ defmodule Fides.Origination.CreditApplication do
         message: "must be positive"
 
       check_constraint :state, "credit_applications_final_state", message: "is final"
+
+      check_constraint :state, "credit_applications_transition",
+        message: "is not a transition of the country's life cycle"
+
+      check_constraint :state, "credit_applications_starts_submitted",
+        message: "must be submitted when the application is created"
     end
 
     custom_indexes do
@@ -145,6 +153,53 @@ defmodule Fides.Origination.CreditApplication do
         """
 
         down "DROP TRIGGER credit_applications_guard ON credit_applications"
+      end
+
+      # The state is always one of the country's
+      statement :state_foreign_key do
+        up """
+        ALTER TABLE credit_applications ADD CONSTRAINT credit_applications_state_fkey
+          FOREIGN KEY (country_code, state) REFERENCES lifecycle_states (country_code, state)
+        """
+
+        down "ALTER TABLE credit_applications DROP CONSTRAINT credit_applications_state_fkey"
+      end
+
+      statement :life_cycle_function do
+        up """
+        CREATE FUNCTION credit_applications_life_cycle() RETURNS trigger LANGUAGE plpgsql AS $$
+        BEGIN
+          IF TG_OP = 'INSERT' THEN
+            IF NEW.state <> 'submitted' THEN
+              RAISE EXCEPTION 'application % starts in %, not in submitted', NEW.id, NEW.state
+                USING ERRCODE = 'check_violation', CONSTRAINT = 'credit_applications_starts_submitted';
+            END IF;
+          ELSIF NEW.state IS DISTINCT FROM OLD.state AND NOT EXISTS (
+            SELECT 1 FROM lifecycle_transitions
+            WHERE country_code = OLD.country_code AND from_state = OLD.state AND to_state = NEW.state
+          ) THEN
+            RAISE EXCEPTION 'application % cannot move from % to % in %',
+              OLD.id, OLD.state, NEW.state, OLD.country_code
+              USING ERRCODE = 'check_violation', CONSTRAINT = 'credit_applications_transition';
+          END IF;
+          RETURN NEW;
+        END
+        $$
+        """
+
+        down "DROP FUNCTION credit_applications_life_cycle()"
+      end
+
+      # An application starts in submitted and only moves along its country's life
+      # cycle. Triggers run in name order, so the guard refuses final states first.
+      statement :life_cycle_trigger do
+        up """
+        CREATE TRIGGER credit_applications_life_cycle
+          BEFORE INSERT OR UPDATE OF state ON credit_applications
+          FOR EACH ROW EXECUTE FUNCTION credit_applications_life_cycle()
+        """
+
+        down "DROP TRIGGER credit_applications_life_cycle ON credit_applications"
       end
     end
   end

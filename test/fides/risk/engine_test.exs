@@ -263,11 +263,14 @@ defmodule Fides.Risk.EngineTest do
            ]
   end
 
-  test "every policy carries a countersign threshold, and unknown countries have none" do
-    for country <- Engine.countries() do
-      assert %{countersign_above_minor: threshold} = params(country)
-      assert is_integer(threshold) and threshold > 0
-    end
+  test "a countersign threshold, in the policies that carry one, is a positive amount, and unknown countries have no policy" do
+    thresholds =
+      Engine.countries()
+      |> Enum.map(&params(&1)[:countersign_above_minor])
+      |> Enum.reject(&is_nil/1)
+
+    assert thresholds != []
+    assert Enum.all?(thresholds, &(is_integer(&1) and &1 > 0))
 
     assert Engine.default_params("AR") == {:error, :unsupported_country}
     assert Engine.evaluate(clean("AR", []), %{}) == {:error, :unsupported_country}
@@ -295,8 +298,8 @@ defmodule Fides.Risk.EngineTest do
       assert {:error, "unknown thresholds: score"} =
                Engine.cast_params("MX", Map.put(params, "score", 1))
 
-      assert {:error, "missing thresholds: countersign_above_minor"} =
-               Engine.cast_params("MX", Map.delete(params, :countersign_above_minor))
+      assert {:error, "missing thresholds: min_income_percent_of_amount"} =
+               Engine.cast_params("MX", Map.delete(params, :min_income_percent_of_amount))
 
       for value <- [-1, 1.5, "20", nil] do
         assert {:error, "thresholds must be non-negative integers: min_income_percent_of_amount"} =
