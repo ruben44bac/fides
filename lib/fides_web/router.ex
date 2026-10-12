@@ -20,6 +20,22 @@ defmodule FidesWeb.Router do
     plug :accepts, ["json"]
   end
 
+  pipeline :staff_api do
+    plug FidesWeb.AuthenticateStaff
+  end
+
+  scope "/api", FidesWeb do
+    pipe_through :api
+
+    post "/auth/token", StaffTokenController, :create
+  end
+
+  scope "/api", FidesWeb do
+    pipe_through [:api, :staff_api]
+
+    delete "/auth/token", StaffTokenController, :delete
+  end
+
   scope "/api/json" do
     pipe_through [:api]
 

@@ -18,7 +18,7 @@ defmodule FidesWeb do
   """
 
   use Boundary,
-    deps: [Fides.Platform, Phoenix, Phoenix.LiveView, Phoenix.Component, Plug],
+    deps: [Fides.Platform, Fides.Accounts, Phoenix, Phoenix.LiveView, Phoenix.Component, Plug],
     exports: [Endpoint, Telemetry]
 
   def static_paths, do: ~w(assets fonts images favicon.ico robots.txt)
