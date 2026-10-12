@@ -41,11 +41,14 @@ jobs:
       - run: mix deps.unlock --check-unused
       - run: mix hex.audit
       - run: mix deps.audit
-      - run: mix format --check-formatted
 
       # Boundary violations and Spark verifier problems are warnings: only a fresh
       # compile with --warnings-as-errors turns all of them into failures.
       - run: mix compile --force --warnings-as-errors
+
+      # The Spark formatter plugin reads the DSL of the project's own extensions,
+      # so it needs the project compiled.
+      - run: mix format --check-formatted
 
       - run: mix credo
       - run: mix sobelow --exit low --skip
@@ -126,6 +129,10 @@ jobs:
   secrets:
     name: Secrets scan
     runs-on: ubuntu-latest
+    # gitleaks reads the pull request's commits through the API
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@v4
         with:
