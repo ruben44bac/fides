@@ -3,9 +3,10 @@ defmodule Mix.Tasks.Fides.Advance do
 
   @moduledoc """
   Makes the system's moves on each application until it waits for an analyst:
-  validation, bank data, and an evaluation under the policy version in force in its
-  country that asks for review. With it, the review commands of the API can be tried
-  before the orchestrator makes these moves on its own.
+  validation, bank data, the provider's webhook where the data arrives later, and an
+  evaluation under the policy version in force in its country that asks for review.
+  Each country's life cycle gives the way. With it, the review commands of the API
+  can be tried before the orchestrator makes these moves on its own.
 
       mix fides.advance APPLICATION_ID [APPLICATION_ID ...]
 
@@ -23,14 +24,8 @@ defmodule Mix.Tasks.Fides.Advance do
 
   @requirements ["app.start"]
 
-  # The system's next move on the way to review, from each state on it
-  @next %{
-    submitted: :validating,
-    validating: :awaiting_bank_data,
-    provider_error: :awaiting_bank_data,
-    awaiting_bank_data: :evaluating,
-    evaluating: :in_review
-  }
+  # The system's moves toward review, in the order it takes them when it has several
+  @way [:validating, :awaiting_bank_data, :awaiting_bank_callback, :evaluating, :in_review]
 
   @impl true
   def run([]), do: Mix.raise("Usage: mix fides.advance APPLICATION_ID [APPLICATION_ID ...]")
@@ -69,12 +64,21 @@ defmodule Mix.Tasks.Fides.Advance do
     end
   end
 
-  defp on_the_way!(%{state: state} = application) when is_map_key(@next, state), do: application
-
   defp on_the_way!(application) do
-    Mix.raise(
-      "Application #{application.id} is #{application.state}: the system makes no move from there"
-    )
+    if next(application) do
+      application
+    else
+      Mix.raise(
+        "Application #{application.id} is #{application.state}: the system makes no move from there"
+      )
+    end
+  end
+
+  defp next(%{state: :in_review}), do: nil
+
+  defp next(%{country_code: country, state: state}) do
+    available = Origination.available_transitions(country, state, :system)
+    Enum.find(@way, &(&1 in available))
   end
 
   defp policy_in_force!(country, system) do
@@ -82,20 +86,22 @@ defmodule Mix.Tasks.Fides.Advance do
       Mix.raise("No policy version is in force in #{country}: run mix run priv/repo/seeds.exs")
   end
 
-  defp advance(%{state: state} = application, policy, system, states)
-       when is_map_key(@next, state) do
-    to = Map.fetch!(@next, state)
+  defp advance(application, policy, system, states) do
+    case next(application) do
+      nil ->
+        {application, Enum.reverse(states)}
 
-    # The evaluation records the policy version it decided with
-    extra = if state == :evaluating, do: %{policy_version_id: policy.id}, else: %{}
+      to ->
+        # The evaluation records the policy version it decided with
+        extra =
+          if application.state == :evaluating, do: %{policy_version_id: policy.id}, else: %{}
 
-    application
-    |> Origination.transition_application!(to, application.lock_version, extra,
-      tenant: application.country_code,
-      actor: system
-    )
-    |> advance(policy, system, [to | states])
+        application
+        |> Origination.transition_application!(to, application.lock_version, extra,
+          tenant: application.country_code,
+          actor: system
+        )
+        |> advance(policy, system, [to | states])
+    end
   end
-
-  defp advance(application, _policy, _system, states), do: {application, Enum.reverse(states)}
 end

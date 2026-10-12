@@ -1,8 +1,9 @@
 defmodule Fides.Risk.Engine.Policy do
   @moduledoc """
   What each country implements: its rule and the parameters of its first policy
-  version. Every country's parameters also carry `countersign_above_minor`: an
-  analyst's approval above that amount needs a risk manager's countersignature.
+  version. The parameters of a country whose life cycle has a countersignature also
+  carry `countersign_above_minor`: an analyst's approval above that amount needs a
+  risk manager's countersignature.
   """
 
   alias Fides.Risk.Engine.Inputs

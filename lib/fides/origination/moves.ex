@@ -3,10 +3,10 @@ defmodule Fides.Origination.Moves do
   Which moves an actor may make on an application right now.
 
   The actor is the system, or the role of a person's scope in the application's
-  country, and the country's life cycle says which moves each one makes. An approval
-  from review depends on the countersign threshold of the policy version the
-  application was evaluated with, and going back from info_requested to validation
-  takes an answer with corrected terms, never a plain transition.
+  country, and the country's life cycle says which moves each one makes. In countries
+  with a countersignature, an approval from review depends on the threshold of the
+  policy version the application was evaluated with. Going back from info_requested
+  to validation takes an answer with corrected terms, never a plain transition.
   """
 
   alias Ash.Error.Changes.InvalidArgument
@@ -63,13 +63,18 @@ defmodule Fides.Origination.Moves do
 
   defp answer_only?(from, to), do: from == :info_requested and to == :validating
 
-  # Only an analyst's approval from review depends on the threshold
-  defp guard_context(%{state: :in_review} = application) do
-    %{
-      amount_minor: application.amount_minor,
-      countersign_above_minor:
-        Fides.Risk.countersign_threshold(application.country_code, application.policy_version_id)
-    }
+  # Only an analyst's approval from review depends on the threshold, and only in
+  # countries with a countersignature
+  defp guard_context(%{state: :in_review, country_code: country} = application) do
+    if Lifecycle.countersign?(country) do
+      %{
+        amount_minor: application.amount_minor,
+        countersign_above_minor:
+          Fides.Risk.countersign_threshold(country, application.policy_version_id)
+      }
+    else
+      %{}
+    end
   end
 
   defp guard_context(_application), do: %{}

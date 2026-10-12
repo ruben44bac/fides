@@ -13,7 +13,7 @@ defmodule Fides.Risk.Engine.Policies.CO do
 
   @impl true
   def default_params do
-    %{max_debt_income_multiple: 5, countersign_above_minor: 20_000_000_000}
+    %{max_debt_income_multiple: 5}
   end
 
   @impl true

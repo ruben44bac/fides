@@ -14,7 +14,7 @@ defmodule Fides.Risk.Engine.Policies.BR do
 
   @impl true
   def default_params do
-    %{approve_min_score: 600, review_min_score: 450, countersign_above_minor: 30_000_000}
+    %{approve_min_score: 600, review_min_score: 450}
   end
 
   @impl true

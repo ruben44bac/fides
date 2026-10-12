@@ -27,7 +27,8 @@ defmodule Fides.Risk do
 
   @doc """
   The amount above which an analyst's approval needs a risk manager's
-  countersignature, under a policy version of the country. Nil without a version.
+  countersignature, under a policy version of the country. Nil without a version, or
+  in a country without a countersignature.
   """
   @spec countersign_threshold(String.t(), Ecto.UUID.t() | nil) :: non_neg_integer() | nil
   def countersign_threshold(_country, nil), do: nil
