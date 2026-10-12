@@ -48,6 +48,10 @@ config :ash,
   many_to_many_destroy_destination_on_match?: true,
   known_types: [AshPostgres.Timestamptz, AshPostgres.TimestamptzUsec]
 
+# Records the country of each audited write and carries the audit context into the
+# processes Ash starts
+config :ash, :tracer, [Fides.Platform.AuditTracer]
+
 config :spark,
   formatter: [
     remove_parens?: true,

@@ -8,7 +8,8 @@ defmodule Fides.Platform.AuditContext do
   rejects any write to an audited table: writes fail closed.
 
   The actor is a pseudonymous string such as `"system:seeds"` or `"staff_user:<id>"`.
-  It must never contain PII.
+  It must never contain PII. When the context names no country, the transaction
+  records the tenant of the running action (see `Fides.Platform.AuditTracer`).
   """
 
   @enforce_keys [:actor, :reason, :correlation_id]
@@ -132,11 +133,26 @@ defmodule Fides.Platform.AuditContext do
       "actor" => context.actor,
       "action" => context.action || action_name(reason),
       "reason" => context.reason,
-      "country" => context.country || reason_field(reason, :tenant),
+      "country" => context.country || Fides.Platform.AuditTracer.tenant(),
       "correlation_id" => context.correlation_id,
       "traceparent" => context.traceparent,
       "code_sha" => Fides.Platform.Build.code_sha()
     }
+  end
+
+  @doc false
+  # This process's audit state, to carry into a process Ash starts.
+  def for_transfer, do: {Process.get(@key), Process.get(@suppressed_key)}
+
+  @doc false
+  def transfer({context, suppressed}) do
+    if context, do: Process.put(@key, context), else: Process.delete(@key)
+
+    if suppressed,
+      do: Process.put(@suppressed_key, suppressed),
+      else: Process.delete(@suppressed_key)
+
+    :ok
   end
 
   defp action_name(reason) do
