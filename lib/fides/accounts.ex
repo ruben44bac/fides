@@ -29,4 +29,8 @@ defmodule Fides.Accounts do
   returns a short-lived bearer token with its claims.
   """
   defdelegate sign_in(email, password, totp_code), to: Fides.Accounts.SignIn
+
+  @doc "A staff user as policies see them: with the scopes that authorize them now."
+  @spec load_actor(Fides.Accounts.StaffUser.t()) :: Fides.Accounts.StaffUser.t()
+  def load_actor(user), do: Ash.load!(user, :active_scopes, authorize?: false, domain: __MODULE__)
 end

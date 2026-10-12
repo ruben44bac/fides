@@ -9,14 +9,19 @@ defmodule Fides.Accounts.Seeds do
   alias Fides.Platform.AuditContext
   alias Fides.Platform.SystemActor
 
-  @spec run() :: [Fides.Accounts.StaffUser.t()]
+  @doc "The demo staff by handle, with the scopes that authorize them."
+  @spec run() :: %{String.t() => Fides.Accounts.StaffUser.t()}
   def run do
     actor = SystemActor.new(:seeds)
     {[admin], others} = Enum.split_with(Demo.users(), &(&1.global_role == :admin))
 
     AuditContext.run([actor: SystemActor.audit_id(actor), reason: "seed demo staff"], fn ->
-      admin = seed(admin, actor)
-      [admin | Enum.map(others, &seed_with_scopes(&1, actor, admin))]
+      admin_user = seed(admin, actor)
+
+      others
+      |> Map.new(&{&1.handle, seed_with_scopes(&1, actor, admin_user)})
+      |> Map.put(admin.handle, admin_user)
+      |> Map.new(fn {handle, user} -> {handle, Fides.Accounts.load_actor(user)} end)
     end)
   end
 

@@ -15,15 +15,20 @@ defmodule Fides.Accounts.SeedsTest do
     first = Seeds.run()
     again = Seeds.run()
 
-    assert Enum.map(again, & &1.id) == Enum.map(first, & &1.id)
-    assert length(first) == length(Demo.users())
+    assert Map.new(again, fn {handle, user} -> {handle, user.id} end) ==
+             Map.new(first, fn {handle, user} -> {handle, user.id} end)
 
-    [admin | _others] = first
+    assert Enum.sort(Map.keys(first)) == Enum.sort(Demo.handles())
+
+    admin = first["admin"]
     assert admin.global_role == :admin
 
     scopes = Accounts.list_all_scopes!(actor: admin)
     assert length(scopes) == Enum.sum_by(Demo.users(), &length(&1.scopes))
     assert Enum.all?(scopes, &(&1.granted_by == admin.id))
+
+    assert Enum.map(first["analyst_mx"].active_scopes, &{&1.country_code, &1.role}) ==
+             [{"MX", :analyst}]
   end
 
   @tag spec: "API-01"
