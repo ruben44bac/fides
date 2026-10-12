@@ -56,3 +56,6 @@ config :fides, Fides.Accounts.StaffUser,
   token_signing_secret: :crypto.hash(:sha256, "fides test staff token key")
 
 config :fides, Fides.Accounts.Demo, totp_seed: :crypto.hash(:sha256, "fides test totp seed")
+
+# Lets the token task call the endpoint in the test process
+config :fides, Mix.Tasks.Fides.Token, req_options: [plug: {Req.Test, Mix.Tasks.Fides.Token}]
