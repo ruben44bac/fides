@@ -24,6 +24,13 @@ defmodule FidesWeb.Router do
     plug FidesWeb.AuthenticateStaff
   end
 
+  # Public: the health check of whatever runs the node
+  scope "/", FidesWeb do
+    pipe_through :api
+
+    get "/health", HealthController, :show
+  end
+
   scope "/api", FidesWeb do
     pipe_through :api
 

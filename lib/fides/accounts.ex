@@ -5,7 +5,7 @@ defmodule Fides.Accounts do
   """
 
   use Fides.Platform.Domain,
-    boundary: [deps: [Fides.Platform], exports: [Demo, StaffUser]]
+    boundary: [deps: [Fides.Platform], exports: [Demo, Seeds, StaffUser]]
 
   resources do
     resource Fides.Accounts.StaffUser do

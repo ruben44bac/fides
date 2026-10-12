@@ -5,7 +5,7 @@ defmodule Fides.Identity do
   """
 
   use Fides.Platform.Domain,
-    boundary: [deps: [Fides.Platform], exports: []]
+    boundary: [deps: [Fides.Platform], exports: [Seeds]]
 
   resources do
     resource Fides.Identity.DocumentType do
