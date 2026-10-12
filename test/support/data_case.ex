@@ -1,24 +1,23 @@
 defmodule Fides.DataCase do
   @moduledoc """
-  This module defines the setup for tests requiring
-  access to the application's data layer.
+  The setup for tests that touch the data layer.
 
-  You may define functions here to be used as helpers in
-  your tests.
+  Each test runs inside the SQL sandbox, which reverts its changes. The whole test
+  is a single database transaction, so it gets a single Carbonite transaction: the
+  first audited write's meta is the one recorded, and later writes in the same test
+  pass under it. Assert fail-closed behaviour before any other audited write.
 
-  Finally, if the test case interacts with the database,
-  we enable the SQL sandbox, so changes done to the database
-  are reverted at the end of every test. If you are using
-  PostgreSQL, you can even run database tests asynchronously
-  by setting `use Fides.DataCase, async: true`, although
-  this option is not recommended for other databases.
+  Tests start without an audit context, so any write to an audited table fails, as
+  in production. Set one with `Fides.Platform.AuditContext.put/1`, or build fixtures
+  with `Fides.Factory.insert/1`.
   """
 
   use ExUnit.CaseTemplate
+  use Boundary, check: [in: false, out: false]
 
   using do
     quote do
-      alias Fides.Repo
+      alias Fides.Platform.Repo
 
       import Ecto
       import Ecto.Changeset
@@ -29,6 +28,7 @@ defmodule Fides.DataCase do
 
   setup tags do
     Fides.DataCase.setup_sandbox(tags)
+    on_exit(fn -> Fides.Platform.AuditContext.clear() end)
     :ok
   end
 
@@ -36,17 +36,17 @@ defmodule Fides.DataCase do
   Sets up the sandbox based on the test tags.
   """
   def setup_sandbox(tags) do
-    pid = Ecto.Adapters.SQL.Sandbox.start_owner!(Fides.Repo, shared: not tags[:async])
+    pid = Ecto.Adapters.SQL.Sandbox.start_owner!(Fides.Platform.Repo, shared: not tags[:async])
     on_exit(fn -> Ecto.Adapters.SQL.Sandbox.stop_owner(pid) end)
+  end
+
+  @doc "The Carbonite transaction of the current test, or nil."
+  def current_carbonite_transaction do
+    Carbonite.Query.current_transaction() |> Fides.Platform.Repo.one()
   end
 
   @doc """
   A helper that transforms changeset errors into a map of messages.
-
-      assert {:error, changeset} = Accounts.create_user(%{password: "short"})
-      assert "password is too short" in errors_on(changeset).password
-      assert %{password: ["password is too short"]} = errors_on(changeset)
-
   """
   def errors_on(changeset) do
     Ecto.Changeset.traverse_errors(changeset, fn {message, opts} ->

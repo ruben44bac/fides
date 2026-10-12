@@ -1,0 +1,23 @@
+name: fides
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg18
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "${FIDES_DB_PORT:-5434}:5432"
+    volumes:
+      # Since PostgreSQL 18 the image keeps PGDATA under /var/lib/postgresql/18/docker,
+      # so the volume mounts the parent directory.
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  postgres-data:

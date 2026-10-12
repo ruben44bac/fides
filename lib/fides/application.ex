@@ -4,12 +4,13 @@ defmodule Fides.Application do
   @moduledoc false
 
   use Application
+  use Boundary, deps: [Fides.Platform, FidesWeb]
 
   @impl true
   def start(_type, _args) do
     children = [
       FidesWeb.Telemetry,
-      Fides.Repo,
+      Fides.Platform.Repo,
       {DNSCluster, query: Application.get_env(:fides, :dns_cluster_query) || :ignore},
       {Oban,
        AshOban.config(
@@ -17,11 +18,8 @@ defmodule Fides.Application do
          Application.fetch_env!(:fides, Oban)
        )},
       {Phoenix.PubSub, name: Fides.PubSub},
-      # Start a worker by calling: Fides.Worker.start_link(arg)
-      # {Fides.Worker, arg},
       # Start to serve requests, typically the last entry
-      FidesWeb.Endpoint,
-      {AshAuthentication.Supervisor, [otp_app: :fides]}
+      FidesWeb.Endpoint
     ]
 
     # See https://elixir.hexdocs.pm/Supervisor.html

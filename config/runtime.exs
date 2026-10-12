@@ -49,7 +49,7 @@ if config_env() == :prod do
 
   maybe_ipv6 = if System.get_env("ECTO_IPV6") in ~w(true 1), do: [:inet6], else: []
 
-  config :fides, Fides.Repo,
+  config :fides, Fides.Platform.Repo,
     # ssl: true,
     url: database_url,
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
@@ -126,7 +126,7 @@ if config_env() == :prod do
   # In production you need to configure the mailer to use a different adapter.
   # Here is an example configuration for Mailgun:
   #
-  #     config :fides, Fides.Mailer,
+  #     config :fides, Fides.Platform.Mailer,
   #       adapter: Swoosh.Adapters.Mailgun,
   #       api_key: System.get_env("MAILGUN_API_KEY"),
   #       domain: System.get_env("MAILGUN_DOMAIN")

@@ -15,7 +15,7 @@ config :fides, Oban,
   queues: [default: 10],
   lifeline: [rescue_after: {2, :hours}],
   pruner: [max_age: {1, :day}],
-  repo: Fides.Repo,
+  repo: Fides.Platform.Repo,
   cron: [crontab: []]
 
 config :mime,
@@ -51,6 +51,34 @@ config :ash,
 config :spark,
   formatter: [
     remove_parens?: true,
+    "Fides.Platform.Resource": [
+      type: Ash.Resource,
+      extensions: [
+        Fides.Platform.Classification,
+        Fides.Platform.Audited,
+        Fides.Platform.ContextIsolation
+      ],
+      section_order: [
+        :json_api,
+        :postgres,
+        :audit,
+        :resource,
+        :code_interface,
+        :actions,
+        :policies,
+        :pub_sub,
+        :preparations,
+        :changes,
+        :validations,
+        :multitenancy,
+        :attributes,
+        :classification,
+        :relationships,
+        :calculations,
+        :aggregates,
+        :identities
+      ]
+    ],
     "Ash.Resource": [
       section_order: [
         :json_api,
@@ -80,9 +108,9 @@ config :spark,
   ]
 
 config :fides,
-  ecto_repos: [Fides.Repo],
+  ecto_repos: [Fides.Platform.Repo],
   generators: [timestamp_type: :utc_datetime],
-  ash_domains: [Fides.Accounts]
+  ash_domains: [Fides.Countries]
 
 # Configure the endpoint
 config :fides, FidesWeb.Endpoint,
@@ -107,7 +135,7 @@ config :phoenix_live_view,
 #
 # For production it's recommended to configure a different adapter
 # at the `config/runtime.exs`.
-config :fides, Fides.Mailer, adapter: Swoosh.Adapters.Local
+config :fides, Fides.Platform.Mailer, adapter: Swoosh.Adapters.Local
 
 # Configure esbuild (the version is required)
 config :esbuild,

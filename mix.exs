@@ -5,14 +5,54 @@ defmodule Fides.MixProject do
     [
       app: :fides,
       version: "0.1.0",
-      elixir: "~> 1.17",
+      elixir: "~> 1.20",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
-      compilers: [:phoenix_live_view] ++ Mix.compilers(),
+      # :boundary must run before :elixir, otherwise it silently checks nothing
+      compilers: [:boundary, :phoenix_live_view] ++ Mix.compilers(),
       listeners: [Phoenix.CodeReloader],
-      consolidate_protocols: Mix.env() != :dev
+      consolidate_protocols: Mix.env() != :dev,
+      boundary: boundary(),
+      test_coverage: test_coverage(),
+      dialyzer: [
+        plt_local_path: "priv/plts/project.plt",
+        plt_core_path: "priv/plts/core.plt",
+        plt_add_apps: [:mix]
+      ]
+    ]
+  end
+
+  # `mix test --cover` fails below the threshold. Test support code and the modules
+  # that Ash and Spark generate from our DSLs are not our code to cover.
+  defp test_coverage do
+    [
+      summary: [threshold: 90],
+      ignore_modules: [
+        Fides.DataCase,
+        Fides.Factory,
+        FidesWeb.ConnCase,
+        Fides.Countries.TestDomain,
+        ~r/^Fides\.\w+\.\w+Probe$/,
+        ~r/^Inspect\./,
+        ~r/^Fides\.Platform\.Classification\.Classification\./,
+        ~r/^Fides\.Platform\.Audited\.Audit\./
+      ]
+    ]
+  end
+
+  # Contexts may not touch web libraries, and module references passed as data
+  # (Ash.read!(Resource), `repo`, relationships) count as dependencies too.
+  # A boundary that declares its own `check:` replaces this whole default.
+  defp boundary do
+    [
+      default: [
+        check: [
+          aliases: true,
+          apps: [:phoenix, :phoenix_live_view, :plug]
+        ]
+      ]
     ]
   end
 
@@ -41,6 +81,12 @@ defmodule Fides.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
+      {:carbonite, "~> 0.17.0"},
+      {:boundary, "~> 0.11.0", runtime: false},
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
+      {:sobelow, "~> 0.16.0", only: [:dev, :test], runtime: false},
+      {:mix_audit, "~> 2.1", only: [:dev, :test], runtime: false},
       {:req_llm, "~> 1.18"},
       {:bcrypt_elixir, "~> 3.0"},
       {:picosat_elixir, "~> 0.2"},

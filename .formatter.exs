@@ -15,6 +15,8 @@
     :ecto_sql,
     :phoenix
   ],
+  # DSL options of the Fides.Platform extensions
+  locals_without_parens: [capture?: 1, immutable: 1, filtered: 1],
   subdirectories: ["priv/*/migrations"],
   plugins: [Spark.Formatter, Phoenix.LiveView.HTMLFormatter],
   inputs: ["*.{heex,ex,exs}", "{config,lib,test}/**/*.{heex,ex,exs}", "priv/*/seeds.exs"]

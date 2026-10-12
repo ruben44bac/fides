@@ -2,10 +2,12 @@ import Config
 config :ash, policies: [show_policy_breakdowns?: true]
 
 # Configure your database
-config :fides, Fides.Repo,
+config :fides, Fides.Platform.Repo,
   username: "postgres",
   password: "postgres",
   hostname: "localhost",
+  # PostgreSQL 18 from deploy/compose.yml
+  port: String.to_integer(System.get_env("FIDES_DB_PORT", "5434")),
   database: "fides_dev",
   stacktrace: true,
   show_sensitive_data_on_connection_error: true,
@@ -23,6 +25,8 @@ config :fides, FidesWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}],
   check_origin: false,
   code_reloader: true,
+  # Without :boundary the reloader leaves the boundary manifest stale
+  reloadable_compilers: [:boundary, :phoenix_live_view, :elixir, :app],
   debug_errors: true,
   secret_key_base: "uQofyEEEbM+msiJAnb+WAHmL9Q/mmOpxCl0MiceBXkreOoisAvarmXibcUGviav+",
   watchers: [
