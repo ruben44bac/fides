@@ -16,6 +16,7 @@ defmodule FidesWeb.ConnCase do
   """
 
   use ExUnit.CaseTemplate
+  use Boundary, top_level?: true, check: [in: false, out: false]
 
   using do
     quote do

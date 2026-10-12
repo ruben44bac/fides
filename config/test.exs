@@ -9,10 +9,12 @@ config :ash, policies: [show_policy_breakdowns?: true], disable_async?: true
 # The MIX_TEST_PARTITION environment variable can be used
 # to provide built-in test partitioning in CI environment.
 # Run `mix help test` for more information.
-config :fides, Fides.Repo,
+config :fides, Fides.Platform.Repo,
   username: "postgres",
   password: "postgres",
   hostname: "localhost",
+  # PostgreSQL 18 from deploy/compose.yml
+  port: String.to_integer(System.get_env("FIDES_DB_PORT", "5434")),
   database: "fides_test#{System.get_env("MIX_TEST_PARTITION")}",
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: System.schedulers_online() * 2
@@ -25,7 +27,7 @@ config :fides, FidesWeb.Endpoint,
   server: false
 
 # In test we don't send emails
-config :fides, Fides.Mailer, adapter: Swoosh.Adapters.Test
+config :fides, Fides.Platform.Mailer, adapter: Swoosh.Adapters.Test
 
 # Disable swoosh api client as it is only required for production adapters
 config :swoosh, :api_client, false

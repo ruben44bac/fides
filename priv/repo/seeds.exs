@@ -1,11 +1,3 @@
-# Script for populating the database. You can run it as:
-#
-#     mix run priv/repo/seeds.exs
-#
-# Inside the script, you can read and write to any of your
-# repositories directly:
-#
-#     Fides.Repo.insert!(%Fides.SomeSchema{})
-#
-# We recommend using the bang functions (`insert!`, `update!`
-# and so on) as they will fail if something goes wrong.
+# Seeds the reference data. Run with `mix run priv/repo/seeds.exs`; running it
+# again leaves the same rows. Every write goes through an audited transaction.
+Fides.Countries.Seeds.run()
