@@ -84,6 +84,32 @@ defmodule Fides.Factory do
     insert(fn -> Fides.Accounts.grant_scope!(user.id, role, tenant: country, actor: admin) end)
   end
 
+  @doc """
+  A staff user with `role` in each of `countries`, granted by `admin`, loaded as
+  policies see them.
+  """
+  def scoped_staff(countries, role, admin) do
+    {user, _secret} = staff_user()
+    for country <- List.wrap(countries), do: scope(user, country, role, admin)
+    Fides.Accounts.load_actor(user)
+  end
+
+  @doc """
+  The country's first policy version in force, without evidence: proposed and
+  published by two risk managers of the country.
+  """
+  def policy_in_force(country, admin) do
+    proposer = scoped_staff(country, :risk_manager, admin)
+    approver = scoped_staff(country, :risk_manager, admin)
+    {:ok, params} = Fides.Risk.default_params(country)
+
+    insert(fn ->
+      params
+      |> Fides.Risk.propose_policy!(tenant: country, actor: proposer)
+      |> Fides.Risk.publish_policy!(tenant: country, actor: approver)
+    end)
+  end
+
   @doc "Overwrites columns of a staff user's row without evidence, for states no action sets."
   def update_staff_user(user, columns) do
     {:ok, id} = Ecto.UUID.dump(user.id)

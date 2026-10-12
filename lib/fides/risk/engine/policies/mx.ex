@@ -17,6 +17,9 @@ defmodule Fides.Risk.Engine.Policies.MX do
   end
 
   @impl true
+  def check_params(_params), do: :ok
+
+  @impl true
   def evaluate(inputs, params) do
     reasons =
       if inputs.declared_income_minor * 100 <

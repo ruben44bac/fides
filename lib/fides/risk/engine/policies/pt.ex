@@ -21,6 +21,14 @@ defmodule Fides.Risk.Engine.Policies.PT do
   end
 
   @impl true
+  def check_params(%{approve_max_income_multiple: approve, review_max_income_multiple: review})
+      when approve <= review,
+      do: :ok
+
+  def check_params(_params),
+    do: {:error, "approve_max_income_multiple cannot be above review_max_income_multiple"}
+
+  @impl true
   def evaluate(inputs, params) do
     income = inputs.declared_income_minor
 

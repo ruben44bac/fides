@@ -18,6 +18,15 @@ defmodule Fides.Risk.Engine.Policies.BR do
   end
 
   @impl true
+  def check_params(%{approve_min_score: approve, review_min_score: review}) do
+    cond do
+      review > approve -> {:error, "review_min_score cannot be above approve_min_score"}
+      approve > 1000 -> {:error, "approve_min_score cannot be above 1000, the highest score"}
+      true -> :ok
+    end
+  end
+
+  @impl true
   def evaluate(inputs, params) do
     cond do
       inputs.score >= params.approve_min_score ->

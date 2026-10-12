@@ -34,6 +34,26 @@ defmodule Fides.Risk.Engine do
     end
   end
 
+  @doc """
+  Checks the thresholds proposed for a country's policy: exactly the ones of its
+  first version, each a non-negative integer, and consistent with each other. Keys
+  may be atoms or strings, as they come back from the database.
+  """
+  @spec cast_params(String.t(), term()) :: {:ok, map()} | {:error, String.t()}
+  def cast_params(country, params) when is_map(params) do
+    with {:ok, policy} <- policy(country),
+         {:ok, defaults} <- default_params(country),
+         {:ok, params} <- known_thresholds(params, Map.keys(defaults)),
+         :ok <- policy.check_params(params) do
+      {:ok, params}
+    else
+      {:error, :unsupported_country} -> {:error, "#{country} has no policy"}
+      {:error, message} -> {:error, message}
+    end
+  end
+
+  def cast_params(_country, _params), do: {:error, "must be a map of thresholds"}
+
   @spec evaluate(Inputs.t(), map()) :: {:ok, Result.t()} | {:error, :unsupported_country}
   def evaluate(%Inputs{} = inputs, params) do
     with {:ok, policy} <- policy(inputs.country) do
@@ -57,6 +77,28 @@ defmodule Fides.Risk.Engine do
       policy -> {:ok, policy}
     end
   end
+
+  # Names come from the country's own thresholds, so no atom is created from input
+  defp known_thresholds(params, names) do
+    expected = Map.new(names, &{Atom.to_string(&1), &1})
+    given = Map.new(params, fn {key, value} -> {key_name(key), value} end)
+    unknown = Map.keys(given) -- Map.keys(expected)
+    missing = Map.keys(expected) -- Map.keys(given)
+    invalid = for {name, value} <- given, not (is_integer(value) and value >= 0), do: name
+
+    cond do
+      unknown != [] -> {:error, "unknown thresholds: " <> list(unknown)}
+      missing != [] -> {:error, "missing thresholds: " <> list(missing)}
+      invalid != [] -> {:error, "thresholds must be non-negative integers: " <> list(invalid)}
+      true -> {:ok, Map.new(given, fn {name, value} -> {Map.fetch!(expected, name), value} end)}
+    end
+  end
+
+  defp key_name(key) when is_binary(key), do: key
+  defp key_name(key) when is_atom(key), do: Atom.to_string(key)
+  defp key_name(key), do: inspect(key)
+
+  defp list(names), do: names |> Enum.sort() |> Enum.join(", ")
 
   defp hash(term), do: :crypto.hash(:sha256, :erlang.term_to_binary(term, [:deterministic]))
 end

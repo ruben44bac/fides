@@ -14,6 +14,9 @@ defmodule Fides.Risk.Engine.Policies.ES do
   end
 
   @impl true
+  def check_params(_params), do: :ok
+
+  @impl true
   def evaluate(inputs, params) do
     reasons =
       if inputs.amount_minor > params.review_above_amount_minor,
