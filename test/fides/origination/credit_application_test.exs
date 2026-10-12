@@ -171,13 +171,15 @@ defmodule Fides.Origination.CreditApplicationTest do
       {:ok, _cancelled} = move(first, :cancelled, ctx.analyst)
       {:ok, other} = submit(ctx)
 
-      # A final state, so only the retry's key can refuse it
+      # The other holder has nothing open, so only the retry's key can refuse it
+      {:ok, _cancelled} = move(other, :cancelled, ctx.analyst)
+
       assert_raise Postgrex.Error, ~r/credit_applications_previous_fkey/, fn ->
         raw(
           """
           INSERT INTO credit_applications (country_code, person_id, previous_application_id,
             currency, amount_minor, monthly_income_minor, state, channel, submitted_at)
-          VALUES ('ES', $1, $2, 'EUR', 1, 1, 'cancelled', 'api', now())
+          VALUES ('ES', $1, $2, 'EUR', 1, 1, 'submitted', 'api', now())
           """,
           [Ecto.UUID.dump!(other.person_id), Ecto.UUID.dump!(first.id)]
         )

@@ -33,6 +33,18 @@ defmodule Fides.Origination do
       define :list_revisions, action: :read
     end
 
+    resource Fides.Origination.LifecycleState do
+      define :list_lifecycle_states, action: :read
+      define :seed_lifecycle_state, action: :seed, args: [:state]
+      define :retire_lifecycle_state, action: :retire
+    end
+
+    resource Fides.Origination.LifecycleTransition do
+      define :list_lifecycle_transitions, action: :read
+      define :seed_lifecycle_transition, action: :seed, args: [:from_state, :to_state]
+      define :retire_lifecycle_transition, action: :retire
+    end
+
     resource Fides.Origination.ApplicationCommands
   end
 
