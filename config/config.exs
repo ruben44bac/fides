@@ -66,6 +66,8 @@ config :spark,
       section_order: [
         :json_api,
         :postgres,
+        :authentication,
+        :token,
         :audit,
         :cloak,
         :resource,
@@ -116,7 +118,14 @@ config :spark,
 config :fides,
   ecto_repos: [Fides.Platform.Repo],
   generators: [timestamp_type: :utc_datetime],
-  ash_domains: [Fides.Countries, Fides.Identity, Fides.Banking, Fides.Origination, Fides.Risk]
+  ash_domains: [
+    Fides.Countries,
+    Fides.Accounts,
+    Fides.Identity,
+    Fides.Banking,
+    Fides.Origination,
+    Fides.Risk
+  ]
 
 # Configure the endpoint
 config :fides, FidesWeb.Endpoint,

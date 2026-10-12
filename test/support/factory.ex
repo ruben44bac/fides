@@ -7,8 +7,11 @@ defmodule Fides.Factory do
 
   use Boundary, check: [in: false, out: false]
 
+  import Ecto.Query, only: [from: 2]
+
   alias Fides.Platform.AuditContext
   alias Fides.Platform.Repo
+  alias Fides.Platform.SystemActor
 
   @doc """
   Runs `fun` with capture switched off for the current transaction, then restores
@@ -39,5 +42,51 @@ defmodule Fides.Factory do
       Fides.Identity.Seeds.run()
       Fides.Banking.Seeds.run()
     end)
+  end
+
+  @staff_password "a staff password"
+
+  @doc "The password of every staff user built here."
+  def staff_password, do: @staff_password
+
+  @doc """
+  Creates a staff user without evidence, enrolled with `:totp_secret` (default: a new
+  one). Returns the user and their secret.
+  """
+  def staff_user(attrs \\ %{}) do
+    attrs =
+      Map.merge(
+        %{
+          email: "staff-#{System.unique_integer([:positive])}@fides.test",
+          password: @staff_password,
+          totp_secret: NimbleTOTP.secret()
+        },
+        Map.new(attrs)
+      )
+
+    user =
+      insert(fn ->
+        Fides.Accounts.seed_staff_user!(attrs, actor: SystemActor.new(:factory))
+      end)
+
+    {user, attrs.totp_secret}
+  end
+
+  @doc "A well-formed TOTP code that `secret` accepts in none of the steps around now."
+  def wrong_code(secret) do
+    now = System.os_time(:second)
+    accepted = for step <- -2..2, do: Fides.Accounts.Totp.code(secret, now + step * 30)
+    Enum.find(~w(000000 000001 000002 000003 000004 000005), &(&1 not in accepted))
+  end
+
+  @doc "Gives `user` a `role` in `country`, granted by `admin`, without evidence."
+  def scope(user, country, role, admin) do
+    insert(fn -> Fides.Accounts.grant_scope!(user.id, role, tenant: country, actor: admin) end)
+  end
+
+  @doc "Overwrites columns of a staff user's row without evidence, for states no action sets."
+  def update_staff_user(user, columns) do
+    {:ok, id} = Ecto.UUID.dump(user.id)
+    insert(fn -> Repo.update_all(from(u in "staff_users", where: u.id == ^id), set: columns) end)
   end
 end

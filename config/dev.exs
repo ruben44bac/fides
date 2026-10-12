@@ -58,7 +58,7 @@ config :fides, FidesWeb.Endpoint,
 # different ports.
 
 # Enable dev routes for dashboard and mailbox
-config :fides, dev_routes: true, token_signing_secret: "rVklclPwG0qN1LTQXULa7r/RE0nrQOpQ"
+config :fides, dev_routes: true
 
 # Do not include metadata nor timestamps in development logs
 config :logger, :default_formatter, format: "[$level] $message\n"
@@ -88,3 +88,10 @@ config :fides, Fides.Platform.Vault,
 
 config :fides, Fides.Platform.BlindIndex,
   key: :crypto.hash(:sha256, "fides development blind index key")
+
+config :fides, Fides.Accounts.StaffUser,
+  token_signing_secret: :crypto.hash(:sha256, "fides development staff token key")
+
+# The demo staff's TOTP secrets derive from it; production has no demo staff
+config :fides, Fides.Accounts.Demo,
+  totp_seed: :crypto.hash(:sha256, "fides development totp seed")

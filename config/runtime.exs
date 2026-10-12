@@ -69,18 +69,26 @@ if config_env() == :prod do
       You can generate one by calling: mix phx.gen.secret
       """
 
-  encryption_key =
-    System.get_env("FIDES_ENCRYPTION_KEY") ||
-      raise "environment variable FIDES_ENCRYPTION_KEY is missing: 32 bytes, base64 encoded"
+  # Every key is 32 random bytes, base64 encoded: a shorter one could be guessed
+  key! = fn name ->
+    value =
+      System.get_env(name) ||
+        raise "environment variable #{name} is missing: 32 bytes, base64 encoded"
 
-  blind_index_key =
-    System.get_env("FIDES_BLIND_INDEX_KEY") ||
-      raise "environment variable FIDES_BLIND_INDEX_KEY is missing: 32 bytes, base64 encoded"
+    case Base.decode64(value) do
+      {:ok, <<_::binary-size(32)>> = key} -> key
+      _other -> raise "environment variable #{name} must be 32 bytes, base64 encoded"
+    end
+  end
 
   # To rotate, list the new key first; values under older keys keep decrypting
-  config :fides, Fides.Platform.Vault, keys: [{"V1", Base.decode64!(encryption_key)}]
+  config :fides, Fides.Platform.Vault, keys: [{"V1", key!.("FIDES_ENCRYPTION_KEY")}]
 
-  config :fides, Fides.Platform.BlindIndex, key: Base.decode64!(blind_index_key)
+  config :fides, Fides.Platform.BlindIndex, key: key!.("FIDES_BLIND_INDEX_KEY")
+
+  # Changing it signs every staff user out
+  config :fides, Fides.Accounts.StaffUser, token_signing_secret: key!.("FIDES_STAFF_TOKEN_KEY")
+
   host = System.get_env("PHX_HOST") || "example.com"
 
   config :fides, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
@@ -95,11 +103,6 @@ if config_env() == :prod do
       ip: {0, 0, 0, 0, 0, 0, 0, 0}
     ],
     secret_key_base: secret_key_base
-
-  config :fides,
-    token_signing_secret:
-      System.get_env("TOKEN_SIGNING_SECRET") ||
-        raise("Missing environment variable `TOKEN_SIGNING_SECRET`!")
 
   # ## SSL Support
   #
