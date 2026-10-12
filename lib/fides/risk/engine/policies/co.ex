@@ -17,6 +17,9 @@ defmodule Fides.Risk.Engine.Policies.CO do
   end
 
   @impl true
+  def check_params(_params), do: :ok
+
+  @impl true
   def evaluate(inputs, params) do
     reasons =
       if inputs.total_debt_minor > params.max_debt_income_multiple * inputs.declared_income_minor,

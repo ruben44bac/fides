@@ -292,6 +292,53 @@ defmodule Fides.Risk.EngineTest do
     assert {:ok, %{outcome: :approve}} = Fides.Risk.evaluate(clean("ES", []), params)
   end
 
+  describe "proposed thresholds" do
+    test "are the country's own, read back from the database with string keys" do
+      for country <- Engine.countries() do
+        params = params(country)
+        stored = Map.new(params, fn {name, value} -> {Atom.to_string(name), value} end)
+
+        assert Engine.cast_params(country, params) == {:ok, params}
+        assert Engine.cast_params(country, stored) == {:ok, params}
+      end
+    end
+
+    test "must name every threshold and nothing else, as non-negative integers" do
+      params = params("MX")
+
+      assert {:error, "unknown thresholds: score"} =
+               Engine.cast_params("MX", Map.put(params, "score", 1))
+
+      assert {:error, "missing thresholds: countersign_above_minor"} =
+               Engine.cast_params("MX", Map.delete(params, :countersign_above_minor))
+
+      for value <- [-1, 1.5, "20", nil] do
+        assert {:error, "thresholds must be non-negative integers: min_income_percent_of_amount"} =
+                 Engine.cast_params("MX", %{params | min_income_percent_of_amount: value})
+      end
+
+      assert {:error, "unknown thresholds: {1}"} =
+               Engine.cast_params("MX", Map.put(params, {1}, 1))
+
+      assert {:error, "must be a map of thresholds"} = Engine.cast_params("MX", [])
+      assert {:error, "AR has no policy"} = Engine.cast_params("AR", %{})
+    end
+
+    test "must keep bands in order and within what the bank reports" do
+      assert {:error, "approve_max_income_multiple" <> _} =
+               Engine.cast_params("PT", %{params("PT") | approve_max_income_multiple: 9})
+
+      assert {:error, "review_min_score" <> _} =
+               Engine.cast_params("BR", %{params("BR") | review_min_score: 700})
+
+      assert {:error, "approve_min_score" <> _} =
+               Engine.cast_params("BR", %{params("BR") | approve_min_score: 1001})
+
+      assert {:error, "min_income_months" <> _} =
+               Engine.cast_params("IT", %{params("IT") | min_income_months: 7})
+    end
+  end
+
   defp inputs_fields do
     %Inputs{
       country: "ES",

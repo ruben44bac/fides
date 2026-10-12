@@ -14,6 +14,9 @@ defmodule Fides.Risk.Engine.Policy do
   @doc "Thresholds of the country's first policy version, in minor units where they are amounts."
   @callback default_params() :: map()
 
+  @doc "Checks the thresholds that only make sense together, such as bands in order."
+  @callback check_params(params :: map()) :: :ok | {:error, String.t()}
+
   @doc "The country's own rule."
   @callback evaluate(Inputs.t(), params :: map()) :: RuleResult.t()
 end

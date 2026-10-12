@@ -16,6 +16,11 @@ defmodule Fides.Risk.Engine.Policies.IT do
     %{min_income_months: 6, min_monthly_income_minor: 120_000, countersign_above_minor: 5_000_000}
   end
 
+  # The bank reports at most six months: requiring more would reject everyone
+  @impl true
+  def check_params(%{min_income_months: months}) when months <= 6, do: :ok
+  def check_params(_params), do: {:error, "min_income_months cannot be above 6"}
+
   @impl true
   def evaluate(inputs, params) do
     reasons =
