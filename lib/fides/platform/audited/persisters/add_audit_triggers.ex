@@ -32,6 +32,7 @@ defmodule Fides.Platform.Audited.Persisters.AddAuditTriggers do
           dsl
           |> maybe_add(Info.audit_capture?(dsl), fn -> capture_statement(dsl, table, filtered) end)
           |> maybe_add(immutable != [], fn -> immutable_statement(table, immutable) end)
+          |> maybe_add(Info.audit_append_only?(dsl), fn -> append_only_statement(table) end)
           |> Transformer.persist(:fides_immutable_columns, immutable)
 
         {:ok, dsl}
@@ -71,6 +72,20 @@ defmodule Fides.Platform.Audited.Persisters.AddAuditTriggers do
       up: up,
       down: "Carbonite.Migrations.drop_trigger(#{inspect(table)})",
       code?: true,
+      global?: false,
+      after_tables: []
+    }
+  end
+
+  defp append_only_statement(table) do
+    %AshPostgres.Statement{
+      name: :append_only,
+      up: """
+      CREATE TRIGGER #{table}_append_only BEFORE UPDATE OR DELETE ON #{table}
+      FOR EACH ROW EXECUTE FUNCTION fides_forbid_change()
+      """,
+      down: "DROP TRIGGER #{table}_append_only ON #{table}",
+      code?: false,
       global?: false,
       after_tables: []
     }

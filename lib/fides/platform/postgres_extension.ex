@@ -7,12 +7,28 @@ defmodule Fides.Platform.PostgresExtension do
       transaction's meta.
     * `fides_forbid_column_change(columns...)`, the trigger function behind the
       `immutable` option of `Fides.Platform.Audited`.
+    * `fides_forbid_change()`, the trigger function behind its `append_only?` option.
+
+  Each version's migration installs what that version adds.
   """
 
-  use AshPostgres.CustomExtension, name: "fides_platform", latest_version: 1
+  use AshPostgres.CustomExtension, name: "fides_platform", latest_version: 2
 
   @impl true
-  def install(0) do
+  def install(0), do: carbonite_and_immutable_columns() <> "\n" <> append_only()
+  def install(1), do: append_only()
+
+  @impl true
+  def uninstall(2), do: ~S|execute("DROP FUNCTION IF EXISTS fides_forbid_change()")|
+
+  def uninstall(1) do
+    ~S'''
+    execute("DROP FUNCTION IF EXISTS fides_forbid_column_change()")
+    Carbonite.Migrations.down(12..1//-1)
+    '''
+  end
+
+  defp carbonite_and_immutable_columns do
     ~S'''
     Carbonite.Migrations.up(1..12)
 
@@ -34,11 +50,16 @@ defmodule Fides.Platform.PostgresExtension do
     '''
   end
 
-  @impl true
-  def uninstall(_version) do
+  defp append_only do
     ~S'''
-    execute("DROP FUNCTION IF EXISTS fides_forbid_column_change()")
-    Carbonite.Migrations.down(12..1//-1)
+    execute("""
+    CREATE FUNCTION fides_forbid_change() RETURNS trigger LANGUAGE plpgsql AS $$
+    BEGIN
+      RAISE EXCEPTION 'rows of %.% are never changed or deleted', TG_TABLE_SCHEMA, TG_TABLE_NAME
+        USING ERRCODE = 'check_violation', CONSTRAINT = TG_TABLE_NAME || '_append_only';
+    END
+    $$
+    """)
     '''
   end
 end

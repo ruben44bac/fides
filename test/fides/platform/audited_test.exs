@@ -127,10 +127,51 @@ defmodule Fides.Platform.AuditedTest do
                  end
   end
 
-  test "the platform extension installs Carbonite and the immutability function" do
+  test "append-only tables refuse every update and delete" do
+    define(fn ->
+      defmodule Elixir.Fides.Countries.AppendOnlyProbe do
+        use Fides.Platform.Resource, domain: Fides.Countries.TestDomain
+
+        postgres do
+          table "append_only_probes"
+          repo Fides.Platform.Repo
+        end
+
+        audit do
+          append_only? true
+        end
+
+        attributes do
+          uuid_v7_primary_key :id
+        end
+
+        classification do
+          attribute :id, :pseudonymous
+        end
+      end
+    end)
+
+    %{append_only: trigger} = statements(Fides.Countries.AppendOnlyProbe)
+
+    assert trigger.up =~ "BEFORE UPDATE OR DELETE ON append_only_probes"
+    assert trigger.up =~ "fides_forbid_change()"
+    assert trigger.down =~ "DROP TRIGGER append_only_probes_append_only"
+    refute Map.has_key?(statements(Fides.Countries.Country), :append_only)
+  end
+
+  test "the platform extension installs Carbonite and the immutability functions" do
     install = Fides.Platform.PostgresExtension.install(0)
     assert install =~ "Carbonite.Migrations.up(1..12)"
     assert install =~ "CREATE FUNCTION fides_forbid_column_change()"
+    assert install =~ "CREATE FUNCTION fides_forbid_change()"
+
+    # Upgrading from the first version adds only what the second brought
+    upgrade = Fides.Platform.PostgresExtension.install(1)
+    assert upgrade =~ "CREATE FUNCTION fides_forbid_change()"
+    refute upgrade =~ "Carbonite"
+
+    assert Fides.Platform.PostgresExtension.uninstall(2) =~
+             "DROP FUNCTION IF EXISTS fides_forbid_change()"
 
     uninstall = Fides.Platform.PostgresExtension.uninstall(1)
     assert uninstall =~ "DROP FUNCTION IF EXISTS fides_forbid_column_change()"

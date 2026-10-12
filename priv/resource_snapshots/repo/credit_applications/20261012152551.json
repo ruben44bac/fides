@@ -1,0 +1,371 @@
+{
+  "attributes": [
+    {
+      "allow_nil?": false,
+      "default": "fragment(\"uuidv7()\")",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": true,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "id",
+      "type": "uuid"
+    },
+    {
+      "allow_nil?": false,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": 2,
+      "source": "country_code",
+      "type": "varchar"
+    },
+    {
+      "allow_nil?": false,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "person_id",
+      "type": "uuid"
+    },
+    {
+      "allow_nil?": true,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "previous_application_id",
+      "type": "uuid"
+    },
+    {
+      "allow_nil?": false,
+      "default": "1",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "revision",
+      "type": "bigint"
+    },
+    {
+      "allow_nil?": false,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": 3,
+      "source": "currency",
+      "type": "varchar"
+    },
+    {
+      "allow_nil?": false,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "amount_minor",
+      "type": "bigint"
+    },
+    {
+      "allow_nil?": false,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "monthly_income_minor",
+      "type": "bigint"
+    },
+    {
+      "allow_nil?": false,
+      "default": "\"submitted\"",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "state",
+      "type": "text"
+    },
+    {
+      "allow_nil?": false,
+      "default": "1",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "lock_version",
+      "type": "bigint"
+    },
+    {
+      "allow_nil?": true,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "policy_version_id",
+      "type": "uuid"
+    },
+    {
+      "allow_nil?": false,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "channel",
+      "type": "text"
+    },
+    {
+      "allow_nil?": false,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "submitted_at",
+      "type": "timestamptz(6)"
+    },
+    {
+      "allow_nil?": false,
+      "default": "fragment(\"(now() AT TIME ZONE 'utc')\")",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "inserted_at",
+      "type": "timestamptz(6)"
+    },
+    {
+      "allow_nil?": false,
+      "default": "fragment(\"(now() AT TIME ZONE 'utc')\")",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "updated_at",
+      "type": "timestamptz(6)"
+    }
+  ],
+  "base_filter": null,
+  "check_constraints": [
+    {
+      "attribute": [
+        "amount_minor"
+      ],
+      "base_filter": null,
+      "check": "amount_minor > 0",
+      "name": "credit_applications_amount_positive"
+    },
+    {
+      "attribute": [
+        "monthly_income_minor"
+      ],
+      "base_filter": null,
+      "check": "monthly_income_minor > 0",
+      "name": "credit_applications_income_positive"
+    }
+  ],
+  "create_table_options": null,
+  "custom_indexes": [
+    {
+      "all_tenants?": false,
+      "concurrently": false,
+      "error_fields": [
+        "state",
+        "id"
+      ],
+      "fields": [
+        {
+          "type": "string",
+          "value": "state"
+        },
+        {
+          "type": "string",
+          "value": "submitted_at DESC"
+        },
+        {
+          "type": "string",
+          "value": "id"
+        }
+      ],
+      "include": null,
+      "include_base_filter?": true,
+      "message": null,
+      "name": "credit_applications_inbox_index",
+      "nulls_distinct": true,
+      "prefix": null,
+      "table": null,
+      "unique": false,
+      "using": null,
+      "where": null
+    }
+  ],
+  "custom_statements": [
+    {
+      "after_tables": [],
+      "code?": false,
+      "down": "DROP INDEX credit_applications_country_code_id_index",
+      "global?": false,
+      "name": "country_id_unique",
+      "up": "CREATE UNIQUE INDEX credit_applications_country_code_id_index ON credit_applications (country_code, id)"
+    },
+    {
+      "after_tables": [
+        "countries"
+      ],
+      "code?": false,
+      "down": "ALTER TABLE credit_applications DROP CONSTRAINT credit_applications_country_code_fkey",
+      "global?": false,
+      "name": "country_foreign_key",
+      "up": "ALTER TABLE credit_applications ADD CONSTRAINT credit_applications_country_code_fkey FOREIGN KEY (country_code) REFERENCES countries (code)"
+    },
+    {
+      "after_tables": [],
+      "code?": false,
+      "down": "DROP TRIGGER credit_applications_immutable_columns ON credit_applications",
+      "global?": false,
+      "name": "immutable_columns",
+      "up": "CREATE TRIGGER credit_applications_immutable_columns BEFORE UPDATE ON credit_applications\nFOR EACH ROW EXECUTE FUNCTION fides_forbid_column_change('country_code', 'person_id', 'previous_application_id', 'currency', 'channel', 'submitted_at')\n"
+    },
+    {
+      "after_tables": [],
+      "code?": true,
+      "down": "Carbonite.Migrations.drop_trigger(\"credit_applications\")",
+      "global?": false,
+      "name": "carbonite_capture",
+      "up": "Carbonite.Migrations.create_trigger(\"credit_applications\")"
+    },
+    {
+      "after_tables": [],
+      "code?": false,
+      "down": "ALTER TABLE credit_applications DROP CONSTRAINT credit_applications_currency_fkey",
+      "global?": false,
+      "name": "currency_foreign_key",
+      "up": "ALTER TABLE credit_applications ADD CONSTRAINT credit_applications_currency_fkey\n  FOREIGN KEY (country_code, currency) REFERENCES countries (code, currency)\n"
+    },
+    {
+      "after_tables": [],
+      "code?": false,
+      "down": "ALTER TABLE credit_applications DROP CONSTRAINT credit_applications_person_fkey",
+      "global?": false,
+      "name": "person_foreign_key",
+      "up": "ALTER TABLE credit_applications ADD CONSTRAINT credit_applications_person_fkey\n  FOREIGN KEY (person_id, country_code) REFERENCES people (id, country_code)\n"
+    },
+    {
+      "after_tables": [],
+      "code?": false,
+      "down": "ALTER TABLE credit_applications DROP CONSTRAINT credit_applications_policy_version_fkey\n",
+      "global?": false,
+      "name": "policy_version_foreign_key",
+      "up": "ALTER TABLE credit_applications ADD CONSTRAINT credit_applications_policy_version_fkey\n  FOREIGN KEY (policy_version_id, country_code) REFERENCES policy_versions (id, country_code)\n"
+    },
+    {
+      "after_tables": [],
+      "code?": false,
+      "down": "DROP INDEX credit_applications_holder_application_index",
+      "global?": false,
+      "name": "holder_application_unique",
+      "up": "CREATE UNIQUE INDEX credit_applications_holder_application_index\n  ON credit_applications (id, person_id, country_code)\n"
+    },
+    {
+      "after_tables": [],
+      "code?": false,
+      "down": "ALTER TABLE credit_applications DROP CONSTRAINT credit_applications_previous_fkey",
+      "global?": false,
+      "name": "previous_application_foreign_key",
+      "up": "ALTER TABLE credit_applications ADD CONSTRAINT credit_applications_previous_fkey\n  FOREIGN KEY (previous_application_id, person_id, country_code)\n  REFERENCES credit_applications (id, person_id, country_code)\n"
+    },
+    {
+      "after_tables": [],
+      "code?": false,
+      "down": "DROP FUNCTION credit_applications_guard()",
+      "global?": false,
+      "name": "guard_function",
+      "up": "CREATE FUNCTION credit_applications_guard() RETURNS trigger LANGUAGE plpgsql AS $$\nBEGIN\n  IF OLD.state IN ('approved', 'rejected', 'cancelled') THEN\n    RAISE EXCEPTION 'application % is %, a final state', OLD.id, OLD.state\n      USING ERRCODE = 'check_violation', CONSTRAINT = 'credit_applications_final_state';\n  END IF;\n  NEW.lock_version := OLD.lock_version + 1;\n  RETURN NEW;\nEND\n$$\n"
+    },
+    {
+      "after_tables": [],
+      "code?": false,
+      "down": "DROP TRIGGER credit_applications_guard ON credit_applications",
+      "global?": false,
+      "name": "guard_trigger",
+      "up": "CREATE TRIGGER credit_applications_guard BEFORE UPDATE ON credit_applications\n  FOR EACH ROW EXECUTE FUNCTION credit_applications_guard()\n"
+    }
+  ],
+  "has_create_action": true,
+  "hash": "312AAF9FD34F3E7BD981BFB0E5DA4D20EC5CEBC1484B27DDC25D161D3E93FCC2",
+  "identities": [
+    {
+      "all_tenants?": false,
+      "base_filter": null,
+      "index_name": "credit_applications_one_open_per_holder_index",
+      "keys": [
+        {
+          "type": "atom",
+          "value": "person_id"
+        }
+      ],
+      "name": "one_open_per_holder",
+      "nils_distinct?": true,
+      "where": "state NOT IN ('approved', 'rejected', 'cancelled')"
+    },
+    {
+      "all_tenants?": false,
+      "base_filter": null,
+      "index_name": "credit_applications_retried_once_index",
+      "keys": [
+        {
+          "type": "atom",
+          "value": "previous_application_id"
+        }
+      ],
+      "name": "retried_once",
+      "nils_distinct?": true,
+      "where": null
+    }
+  ],
+  "multitenancy": {
+    "attribute": "country_code",
+    "global": false,
+    "strategy": "attribute"
+  },
+  "repo": "Elixir.Fides.Platform.Repo",
+  "schema": null,
+  "table": "credit_applications",
+  "temporal": null
+}

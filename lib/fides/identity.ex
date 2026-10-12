@@ -17,6 +17,11 @@ defmodule Fides.Identity do
       define :resolve_person, action: :resolve
       define :get_person, action: :read, get_by: [:id]
     end
+
+    resource Fides.Identity.Consent do
+      define :accept_consent, action: :accept
+      define :list_consents, action: :read
+    end
   end
 
   @doc "Validates a document for a country, against the holder's data when the document encodes it."
