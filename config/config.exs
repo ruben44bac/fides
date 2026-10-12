@@ -82,7 +82,7 @@ config :spark,
 config :fides,
   ecto_repos: [Fides.Repo],
   generators: [timestamp_type: :utc_datetime],
-  ash_domains: [Fides.Accounts]
+  ash_domains: []
 
 # Configure the endpoint
 config :fides, FidesWeb.Endpoint,

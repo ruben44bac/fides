@@ -20,8 +20,7 @@ defmodule Fides.Application do
       # Start a worker by calling: Fides.Worker.start_link(arg)
       # {Fides.Worker, arg},
       # Start to serve requests, typically the last entry
-      FidesWeb.Endpoint,
-      {AshAuthentication.Supervisor, [otp_app: :fides]}
+      FidesWeb.Endpoint
     ]
 
     # See https://elixir.hexdocs.pm/Supervisor.html
