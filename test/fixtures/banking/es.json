@@ -1,0 +1,8 @@
+{
+  "cliente": {
+    "iban": "ES91 2100 0418 4502 0005 1332",
+    "deuda_total_centimos": 1200000,
+    "ingresos": {"mensual_centimos": 250000, "meses_con_ingresos": 6}
+  },
+  "puntuacion": 720
+}
