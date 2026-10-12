@@ -13,7 +13,8 @@
     :reactor,
     :ecto,
     :ecto_sql,
-    :phoenix
+    :phoenix,
+    :stream_data
   ],
   # DSL options of the Fides.Platform extensions
   locals_without_parens: [capture?: 1, immutable: 1, filtered: 1],
