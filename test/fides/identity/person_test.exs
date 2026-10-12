@@ -4,6 +4,8 @@ defmodule Fides.Identity.PersonTest do
   use ExUnitProperties
 
   alias Fides.Identity
+  alias Fides.Identity.Documents.MX
+  alias Fides.Platform.AgentActor
   alias Fides.Platform.AuditContext
   alias Fides.Platform.SystemActor
 
@@ -137,5 +139,49 @@ defmodule Fides.Identity.PersonTest do
       end)
 
     assert <<_::binary-size(14), "7", _::binary>> = Ecto.UUID.load!(id)
+  end
+
+  describe "adulthood" do
+    test "is recorded when the document encodes an adult birth date" do
+      {:ok, adult} = resolve(Fides.Factory.mexican_holder(), "MX")
+      assert %DateTime{} = adult.adult_verified_at
+
+      # The same holder, born in 2010: the CURP proves a minor
+      body = "HEGG100427MVZRRLA"
+      curp = body <> Integer.to_string(MX.check_digit(body))
+
+      {:ok, minor} =
+        resolve(
+          %{Fides.Factory.mexican_holder() | document: curp, birth_date: ~D[2010-04-27]},
+          "MX"
+        )
+
+      assert minor.adult_verified_at == nil
+
+      # A DNI encodes no birth date
+      {:ok, spanish} = resolve(@holder)
+      assert spanish.adult_verified_at == nil
+    end
+  end
+
+  describe "the check Intake makes" do
+    test "finds the document valid, and the holder an adult where the document proves it" do
+      intake = AgentActor.new(:intake)
+      {:ok, mexican} = resolve(Fides.Factory.mexican_holder(), "MX")
+      {:ok, spanish} = resolve(@holder)
+
+      assert {:ok, %{document_valid?: true, adult?: true, adult_verified_at: %DateTime{}}} =
+               Identity.check_holder("MX", mexican.id, intake)
+
+      assert {:ok, %{document_valid?: true, adult?: nil, adult_verified_at: nil}} =
+               Identity.check_holder("ES", spanish.id, intake)
+    end
+
+    test "is only for Intake: for any other agent, the holder does not exist" do
+      {:ok, spanish} = resolve(@holder)
+
+      assert {:error, %Ash.Error.Invalid{errors: [%Ash.Error.Query.NotFound{}]}} =
+               Identity.check_holder("ES", spanish.id, AgentActor.new(:risk))
+    end
   end
 end

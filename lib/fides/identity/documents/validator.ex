@@ -18,4 +18,17 @@ defmodule Fides.Identity.Documents.Validator do
   """
   @callback validate(type :: String.t(), document :: String.t(), Holder.t()) ::
               {:ok, Date.t() | nil} | {:error, [atom()]}
+
+  @doc """
+  What a document itself encodes about its holder, such as the birth date and the
+  sex, or an empty map when the document is malformed. A stored holder's document can
+  then be checked again without the data that was not kept. Only countries whose
+  documents encode the holder's data implement it.
+  """
+  @callback encoded(type :: String.t(), document :: String.t()) :: %{
+              optional(:birth_date) => Date.t(),
+              optional(:sex) => :female | :male | nil
+            }
+
+  @optional_callbacks encoded: 2
 end

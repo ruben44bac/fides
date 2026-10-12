@@ -1,7 +1,8 @@
 defmodule Fides.Identity.Person.Changes.Resolve do
   @moduledoc false
   # Validates the document for the tenant's country, then sets the encrypted values
-  # and the keyed hashes. The birth date and the sex are only used for the check.
+  # and the keyed hashes. The birth date and the sex are only used for the check, and
+  # to record that a holder whose document encodes an adult birth date is an adult.
 
   use Ash.Resource.Change
 
@@ -17,7 +18,7 @@ defmodule Fides.Identity.Person.Changes.Resolve do
     holder = Map.take(arguments, @holder_fields)
     email = String.trim(arguments.email || "")
 
-    with {:ok, %{document: document}} <-
+    with {:ok, %{document: document, birth_date: birth_date}} <-
            Documents.validate(country, arguments.document_type, arguments.document, holder),
          true <- email =~ ~r/^[^\s@]+@[^\s@]+\.[^\s@]+$/ || {:error, :email} do
       changeset
@@ -33,6 +34,7 @@ defmodule Fides.Identity.Person.Changes.Resolve do
         :name,
         Map.take(holder, [:given_names, :first_surname, :second_surname])
       )
+      |> verify_adult(birth_date)
     else
       {:error, :email} ->
         Ash.Changeset.add_error(changeset, field: :email, message: "is not a valid email")
@@ -43,5 +45,15 @@ defmodule Fides.Identity.Person.Changes.Resolve do
           message: "is not valid: #{Enum.join(reasons, ", ")}"
         )
     end
+  end
+
+  # Only a birth date the document encodes, checked against the holder's data, proves
+  # adulthood
+  defp verify_adult(changeset, nil), do: changeset
+
+  defp verify_adult(changeset, birth_date) do
+    if Documents.adult?(birth_date, Date.utc_today()),
+      do: Ash.Changeset.force_change_attribute(changeset, :adult_verified_at, DateTime.utc_now()),
+      else: changeset
   end
 end

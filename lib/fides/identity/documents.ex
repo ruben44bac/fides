@@ -55,6 +55,36 @@ defmodule Fides.Identity.Documents do
     end
   end
 
+  @doc """
+  Checks a stored holder's document again, with the names the holder keeps. The
+  birth date and the sex are not stored: where the document encodes them, the check
+  takes them from the document itself, so it still covers the format, the control
+  characters and the names.
+  """
+  @spec revalidate(String.t(), String.t(), String.t(), map()) :: :ok | {:error, [atom()]}
+  def revalidate(country, type, document, names) do
+    normalized = normalize(document)
+
+    with {:ok, validator} <- validator(country),
+         :ok <- supported(validator, type),
+         holder = Map.merge(Map.new(names), encoded(validator, type, normalized)),
+         {:ok, _birth_date} <- validator.validate(type, normalized, Holder.new(holder)) do
+      :ok
+    end
+  end
+
+  @doc "Whether a document type of a country encodes the holder's birth date."
+  @spec encodes_birth_date?(String.t(), String.t()) :: boolean()
+  def encodes_birth_date?(country, type) do
+    case validator(country) do
+      {:ok, validator} ->
+        type in validator.document_types() and function_exported?(validator, :encoded, 2)
+
+      {:error, _reasons} ->
+        false
+    end
+  end
+
   @doc "Whether someone born on `birth_date` is at least 18 years old on `today`."
   @spec adult?(Date.t(), Date.t()) :: boolean()
   def adult?(%Date{} = birth_date, %Date{} = today) do
@@ -66,6 +96,12 @@ defmodule Fides.Identity.Documents do
       nil -> {:error, [:unsupported_country]}
       validator -> {:ok, validator}
     end
+  end
+
+  defp encoded(validator, type, document) do
+    if function_exported?(validator, :encoded, 2),
+      do: validator.encoded(type, document),
+      else: %{}
   end
 
   defp supported(validator, type) do

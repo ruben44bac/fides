@@ -40,6 +40,47 @@ defmodule Fides.Identity do
     |> Ash.read_one(tenant: country, authorize?: false)
   end
 
+  @doc """
+  What Intake finds about a holder: whether their document is still valid for the
+  country with the name they keep, and, where the document encodes a birth date,
+  whether they were verified as an adult. `adult?` is nil for documents that encode
+  none.
+  """
+  @spec check_holder(String.t(), Ecto.UUID.t(), term()) ::
+          {:ok,
+           %{
+             document_valid?: boolean(),
+             adult?: boolean() | nil,
+             adult_verified_at: DateTime.t() | nil
+           }}
+          | {:error, term()}
+  def check_holder(country, person_id, actor) do
+    with {:ok, person} <-
+           Ash.get(Fides.Identity.Person, person_id,
+             tenant: country,
+             actor: actor,
+             load: [:name, :document]
+           ) do
+      names = Map.new(person.name, fn {key, value} -> {name_key(key), value} end)
+      type = person.document_type
+
+      adult? =
+        cond do
+          person.adult_verified_at -> true
+          Fides.Identity.Documents.encodes_birth_date?(country, type) -> false
+          true -> nil
+        end
+
+      {:ok,
+       %{
+         document_valid?:
+           Fides.Identity.Documents.revalidate(country, type, person.document, names) == :ok,
+         adult?: adult?,
+         adult_verified_at: person.adult_verified_at
+       }}
+    end
+  end
+
   @doc "Validates a document for a country, against the holder's data when the document encodes it."
   defdelegate validate_document(country, type, document, holder \\ %{}),
     to: Fides.Identity.Documents,
@@ -47,4 +88,14 @@ defmodule Fides.Identity do
 
   @doc "Whether someone born on `birth_date` is an adult on `today`."
   defdelegate adult?(birth_date, today), to: Fides.Identity.Documents
+
+  @name_parts %{
+    "given_names" => :given_names,
+    "first_surname" => :first_surname,
+    "second_surname" => :second_surname
+  }
+
+  # The name comes back with the keys it was stored with
+  defp name_key(key) when is_atom(key), do: key
+  defp name_key(key), do: Map.fetch!(@name_parts, key)
 end
