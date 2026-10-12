@@ -19,6 +19,7 @@ defmodule Fides.Platform do
       SystemActor,
       Checks.SystemActor,
       Context,
+      DataInventory,
       Classification,
       Classification.Info,
       Audited,
