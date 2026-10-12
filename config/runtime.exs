@@ -69,6 +69,18 @@ if config_env() == :prod do
       You can generate one by calling: mix phx.gen.secret
       """
 
+  encryption_key =
+    System.get_env("FIDES_ENCRYPTION_KEY") ||
+      raise "environment variable FIDES_ENCRYPTION_KEY is missing: 32 bytes, base64 encoded"
+
+  blind_index_key =
+    System.get_env("FIDES_BLIND_INDEX_KEY") ||
+      raise "environment variable FIDES_BLIND_INDEX_KEY is missing: 32 bytes, base64 encoded"
+
+  # To rotate, list the new key first; values under older keys keep decrypting
+  config :fides, Fides.Platform.Vault, keys: [{"V1", Base.decode64!(encryption_key)}]
+
+  config :fides, Fides.Platform.BlindIndex, key: Base.decode64!(blind_index_key)
   host = System.get_env("PHX_HOST") || "example.com"
 
   config :fides, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")

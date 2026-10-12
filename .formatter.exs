@@ -1,5 +1,6 @@
 [
   import_deps: [
+    :ash_cloak,
     :ash_ai,
     :ash_oban,
     :oban,

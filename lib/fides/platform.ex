@@ -11,6 +11,10 @@ defmodule Fides.Platform do
     deps: [],
     exports: [
       Repo,
+      Vault,
+      BlindIndex,
+      Types.CountryCode,
+      CountryScoped,
       Mailer,
       Resource,
       Domain,

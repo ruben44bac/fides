@@ -6,6 +6,8 @@ defmodule Fides.Platform.Resource do
     * `Fides.Platform.Audited`: the table gets its Carbonite trigger and its
       immutable columns.
     * `Fides.Platform.ContextIsolation`: no relationship leaves the context.
+    * `Fides.Platform.CountryScoped`: per-country data uses the country as its
+      tenant and cannot point at a country Fides does not operate in.
 
   Defaults to `AshPostgres.DataLayer` and `Ash.Policy.Authorizer`.
   """
@@ -13,7 +15,8 @@ defmodule Fides.Platform.Resource do
   @extensions [
     Fides.Platform.Classification,
     Fides.Platform.Audited,
-    Fides.Platform.ContextIsolation
+    Fides.Platform.ContextIsolation,
+    Fides.Platform.CountryScoped
   ]
 
   @doc false

@@ -1,5 +1,6 @@
 defmodule Fides.Platform.AuditContextTest do
-  use Fides.DataCase, async: true
+  # Seeds the same countries as other tests: running alone avoids waiting on their locks
+  use Fides.DataCase, async: false
 
   alias Fides.Countries.Country
   alias Fides.Platform.AuditContext
@@ -76,7 +77,7 @@ defmodule Fides.Platform.AuditContextTest do
           return_errors?: true
         )
 
-      assert result.status == :success
+      assert result.status == :success, inspect(result.errors)
       assert {:ok, changes} = Carbonite.fetch_changes(Fides.Platform.Repo)
       assert length(changes) == 6
     end
@@ -107,13 +108,26 @@ defmodule Fides.Platform.AuditContextTest do
   describe "meta/2" do
     test "takes the action from the Ash transaction unless the context names one" do
       context = AuditContext.new(actor: "system:test", reason: "check")
-      reason = %{type: :create, metadata: %{resource: Country, action: :seed, tenant: "MX"}}
+      reason = %{type: :create, metadata: %{resource: Country, action: :seed}}
 
-      assert %{"action" => "Fides.Countries.Country.seed", "country" => "MX"} =
-               AuditContext.meta(context, reason)
+      assert %{"action" => "Fides.Countries.Country.seed"} = AuditContext.meta(context, reason)
 
       assert %{"action" => "countries.reseed"} =
                AuditContext.meta(%{context | action: "countries.reseed"}, reason)
+    end
+
+    test "takes the country from the running action unless the context names one" do
+      context = AuditContext.new(actor: "system:test", reason: "check")
+
+      Fides.Platform.AuditTracer.start_span(:action, "seed")
+      Fides.Platform.AuditTracer.set_metadata(:action, %{tenant: "MX"})
+
+      try do
+        assert %{"country" => "MX"} = AuditContext.meta(context)
+        assert %{"country" => "ES"} = AuditContext.meta(%{context | country: "ES"})
+      after
+        Fides.Platform.AuditTracer.stop_span()
+      end
     end
 
     test "accepts keyword metadata and transactions without a resource" do

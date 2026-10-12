@@ -37,6 +37,11 @@ defmodule Fides.Platform.AuditedTest do
           filtered [:secret]
         end
 
+        multitenancy do
+          strategy :attribute
+          attribute :country_code
+        end
+
         attributes do
           uuid_v7_primary_key :id
           attribute :country_code, :string, allow_nil?: false

@@ -31,4 +31,13 @@ defmodule Fides.Factory do
   def countries do
     insert(&Fides.Countries.Seeds.run/0)
   end
+
+  @doc "Seeds the countries with their document types and bank providers, without evidence."
+  def reference_data do
+    insert(fn ->
+      Fides.Countries.Seeds.run()
+      Fides.Identity.Seeds.run()
+      Fides.Banking.Seeds.run()
+    end)
+  end
 end
