@@ -1,0 +1,28 @@
+# PostgreSQL 18 with pgvector for the hosted demo: the image compose and CI use,
+# on a volume, reachable only inside the private network as
+# fides-demo-db.internal. POSTGRES_PASSWORD is a secret set by bootstrap.sh.
+app = "fides-demo-db"
+primary_region = "qro"
+
+[build]
+  image = "pgvector/pgvector:pg18"
+
+[env]
+  POSTGRES_DB = "fides"
+  POSTGRES_USER = "fides"
+
+[mounts]
+  source = "pgdata"
+  destination = "/var/lib/postgresql"
+
+[checks]
+  [checks.postgres]
+    type = "tcp"
+    port = 5432
+    interval = "15s"
+    timeout = "2s"
+    grace_period = "30s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
