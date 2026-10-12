@@ -60,12 +60,14 @@ config :spark,
       extensions: [
         Fides.Platform.Classification,
         Fides.Platform.Audited,
-        Fides.Platform.ContextIsolation
+        Fides.Platform.ContextIsolation,
+        Fides.Platform.CountryScoped
       ],
       section_order: [
         :json_api,
         :postgres,
         :audit,
+        :cloak,
         :resource,
         :code_interface,
         :actions,

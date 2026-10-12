@@ -11,6 +11,8 @@ defmodule Fides.Platform do
     deps: [],
     exports: [
       Repo,
+      Types.CountryCode,
+      CountryScoped,
       Mailer,
       Resource,
       Domain,
