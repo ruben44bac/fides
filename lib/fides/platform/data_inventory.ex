@@ -7,7 +7,7 @@ defmodule Fides.Platform.DataInventory do
 
   alias Fides.Platform.Classification
 
-  @path "docs/generated/data-inventory.md"
+  @path "priv/generated/data-inventory.md"
 
   @spec path() :: String.t()
   def path, do: @path

@@ -11,7 +11,8 @@ defmodule Mix.Tasks.Fides.Gen.InventoryTest do
 
   test "writes the inventory, and the check passes once it is up to date" do
     Inventory.run([])
-    assert_received {:mix_shell, :info, ["Wrote docs/generated/data-inventory.md"]}
+    assert_received {:mix_shell, :info, ["Wrote " <> path]}
+    assert path == Fides.Platform.DataInventory.path()
 
     Inventory.run(["--check"])
   end
