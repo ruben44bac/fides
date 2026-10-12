@@ -1,0 +1,136 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  OTP_VERSION: "29"
+  ELIXIR_VERSION: "1.20.4"
+
+jobs:
+  quality:
+    name: Warnings, format, Credo, security and generated docs
+    runs-on: ubuntu-latest
+    env:
+      MIX_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{ env.OTP_VERSION }}
+          elixir-version: ${{ env.ELIXIR_VERSION }}
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            deps
+            _build
+          key: mix-quality-${{ runner.os }}-${{ hashFiles('mix.lock') }}
+          restore-keys: mix-quality-${{ runner.os }}-
+
+      - run: mix deps.get
+      - run: mix deps.unlock --check-unused
+      - run: mix hex.audit
+      - run: mix deps.audit
+      - run: mix format --check-formatted
+
+      # Boundary violations and Spark verifier problems are warnings: only a fresh
+      # compile with --warnings-as-errors turns all of them into failures.
+      - run: mix compile --force --warnings-as-errors
+
+      - run: mix credo
+      - run: mix sobelow --exit low --skip
+      - run: mix fides.gen.inventory --check
+
+  test:
+    name: Tests and coverage
+    runs-on: ubuntu-latest
+    env:
+      MIX_ENV: test
+      FIDES_DB_PORT: 5432
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{ env.OTP_VERSION }}
+          elixir-version: ${{ env.ELIXIR_VERSION }}
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            deps
+            _build
+          key: mix-test-${{ runner.os }}-${{ hashFiles('mix.lock') }}
+          restore-keys: mix-test-${{ runner.os }}-
+
+      - run: mix deps.get
+
+      # Fails below the coverage threshold set in mix.exs, and on any warning.
+      - run: mix test --cover --warnings-as-errors
+
+  dialyzer:
+    name: Dialyzer
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{ env.OTP_VERSION }}
+          elixir-version: ${{ env.ELIXIR_VERSION }}
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            deps
+            _build
+          key: mix-dialyzer-${{ runner.os }}-${{ hashFiles('mix.lock') }}
+          restore-keys: mix-dialyzer-${{ runner.os }}-
+
+      - uses: actions/cache@v4
+        with:
+          path: priv/plts
+          key: plts-${{ runner.os }}-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}-${{ hashFiles('mix.lock') }}
+          restore-keys: plts-${{ runner.os }}-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}-
+
+      - run: mix deps.get
+      - run: mkdir -p priv/plts
+      - run: mix dialyzer --plt
+      - run: mix dialyzer --format github
+
+  secrets:
+    name: Secrets scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
