@@ -6,12 +6,13 @@ defmodule Mix.Tasks.Fides.Advance do
   validation, bank data, the provider's webhook where the data arrives later, and an
   evaluation under the policy version in force in its country that asks for review.
   Each country's life cycle gives the way. With it, the review commands of the API
-  can be tried before the orchestrator makes these moves on its own.
+  can be tried while the orchestrator cannot yet make every one of these moves.
 
       mix fides.advance APPLICATION_ID [APPLICATION_ID ...]
 
   It continues from wherever each application is on that way, so one sent back to
-  validation by an answer to a request for information goes back to review. Every
+  validation by an answer to a request for information goes back to review. When the
+  orchestrator moves an application in the meantime, it goes on from there. Every
   application is checked before any of them moves. Runs in development and tests only.
   """
 
@@ -96,12 +97,24 @@ defmodule Mix.Tasks.Fides.Advance do
         extra =
           if application.state == :evaluating, do: %{policy_version_id: policy.id}, else: %{}
 
-        application
-        |> Origination.transition_application!(to, application.lock_version, extra,
-          tenant: application.country_code,
-          actor: system
-        )
-        |> advance(policy, system, [to | states])
+        case Origination.transition_application(application, to, application.lock_version, extra,
+               tenant: application.country_code,
+               actor: system
+             ) do
+          {:ok, moved} -> advance(moved, policy, system, [to | states])
+          {:error, error} -> go_on(application, error, policy, system, states)
+        end
+    end
+  end
+
+  # The orchestrator may have moved the application meanwhile: go on from where it is
+  defp go_on(application, error, policy, system, states) do
+    case Origination.find_application!(application.id, actor: system) do
+      %{lock_version: version} = moved when version != application.lock_version ->
+        advance(moved, policy, system, [moved.state | states])
+
+      _unchanged ->
+        raise error
     end
   end
 end
