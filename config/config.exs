@@ -110,7 +110,7 @@ config :spark,
 config :fides,
   ecto_repos: [Fides.Platform.Repo],
   generators: [timestamp_type: :utc_datetime],
-  ash_domains: [Fides.Countries, Fides.Identity]
+  ash_domains: [Fides.Countries, Fides.Identity, Fides.Risk]
 
 # Configure the endpoint
 config :fides, FidesWeb.Endpoint,
