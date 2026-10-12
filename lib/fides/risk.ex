@@ -24,4 +24,24 @@ defmodule Fides.Risk do
 
   @doc "Checks a policy's parameters for a country, with atom keys once valid."
   defdelegate cast_params(country, params), to: Fides.Risk.Engine
+
+  @doc """
+  The amount above which an analyst's approval needs a risk manager's
+  countersignature, under a policy version of the country. Nil without a version.
+  """
+  @spec countersign_threshold(String.t(), Ecto.UUID.t() | nil) :: non_neg_integer() | nil
+  def countersign_threshold(_country, nil), do: nil
+
+  def countersign_threshold(country, policy_version_id) do
+    with {:ok, version} <-
+           Ash.get(Fides.Risk.PolicyVersion, policy_version_id,
+             tenant: country,
+             authorize?: false
+           ),
+         {:ok, %{countersign_above_minor: threshold}} <- cast_params(country, version.params) do
+      threshold
+    else
+      _no_version -> nil
+    end
+  end
 end

@@ -94,6 +94,38 @@ defmodule Fides.Factory do
     Fides.Accounts.load_actor(user)
   end
 
+  @doc "A valid Spanish DNI for `number`, so each test can have its own holders."
+  def dni(number) do
+    digits = number |> rem(100_000_000) |> Integer.to_string() |> String.pad_leading(8, "0")
+    digits <> Fides.Identity.Documents.ES.control_letter(digits)
+  end
+
+  @doc "A Spanish holder's data, as a submission carries it."
+  def holder(number \\ System.unique_integer([:positive])) do
+    %{
+      document_type: "DNI",
+      document: dni(number),
+      given_names: "Ana",
+      first_surname: "Ruiz",
+      email: "ana.#{number}@example.com"
+    }
+  end
+
+  @doc "A Spanish application's submission, with `overrides`."
+  def submission(overrides \\ %{}) do
+    Map.merge(
+      %{
+        amount_minor: 1_000_000,
+        monthly_income_minor: 300_000,
+        currency: "EUR",
+        channel: :api,
+        holder: holder(),
+        consent_text_version: "2026-10"
+      },
+      Map.new(overrides)
+    )
+  end
+
   @doc """
   The country's first policy version in force, without evidence: proposed and
   published by two risk managers of the country.
