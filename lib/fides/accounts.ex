@@ -5,7 +5,7 @@ defmodule Fides.Accounts do
   """
 
   use Fides.Platform.Domain,
-    boundary: [deps: [Fides.Platform], exports: [Demo, StaffUser]]
+    boundary: [deps: [Fides.Platform], exports: [Demo, StaffUser, Idempotency]]
 
   resources do
     resource Fides.Accounts.StaffUser do
@@ -22,6 +22,7 @@ defmodule Fides.Accounts do
     end
 
     resource Fides.Accounts.StaffToken
+    resource Fides.Accounts.IdempotencyKey
   end
 
   @doc """
