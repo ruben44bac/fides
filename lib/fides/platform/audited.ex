@@ -13,6 +13,8 @@ defmodule Fides.Platform.Audited do
     * `immutable` columns cannot change after insert. `country_code` is always
       immutable.
     * `filtered` columns are recorded as `[FILTERED]` in the evidence.
+    * With `append_only? true`, rows are never updated or deleted: the database
+      refuses both.
   """
 
   @audit %Spark.Dsl.Section{
@@ -33,6 +35,11 @@ defmodule Fides.Platform.Audited do
         type: {:list, :atom},
         default: [],
         doc: "Columns whose values Carbonite records as `[FILTERED]`."
+      ],
+      append_only?: [
+        type: :boolean,
+        default: false,
+        doc: "Whether the database refuses every update and delete of the table's rows."
       ]
     ]
   }
