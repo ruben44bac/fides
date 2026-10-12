@@ -201,6 +201,44 @@ defmodule Fides.Origination.CreditApplication do
 
         down "DROP TRIGGER credit_applications_life_cycle ON credit_applications"
       end
+
+      # Every write enqueues the orchestrator's next step in its own transaction, so a
+      # step is never lost or doubled, and tells the screens that show applications
+      statement :outbox_function do
+        up """
+        CREATE FUNCTION credit_applications_outbox() RETURNS trigger LANGUAGE plpgsql AS $$
+        BEGIN
+          INSERT INTO oban_jobs (queue, worker, args)
+          VALUES ('orchestration', 'Fides.Orchestration.Step', jsonb_build_object(
+            'application_id', NEW.id,
+            'country_code', NEW.country_code,
+            'lock_version', NEW.lock_version
+          ));
+
+          PERFORM pg_notify('credit_applications', jsonb_build_object(
+            'id', NEW.id,
+            'country_code', NEW.country_code,
+            'state', NEW.state,
+            'lock_version', NEW.lock_version
+          )::text);
+
+          RETURN NULL;
+        END
+        $$
+        """
+
+        down "DROP FUNCTION credit_applications_outbox()"
+      end
+
+      statement :outbox_trigger do
+        up """
+        CREATE TRIGGER credit_applications_outbox
+          AFTER INSERT OR UPDATE ON credit_applications
+          FOR EACH ROW EXECUTE FUNCTION credit_applications_outbox()
+        """
+
+        down "DROP TRIGGER credit_applications_outbox ON credit_applications"
+      end
     end
   end
 

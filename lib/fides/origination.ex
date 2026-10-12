@@ -52,4 +52,7 @@ defmodule Fides.Origination do
   defdelegate available_transitions(country, state, actor, context \\ %{}),
     to: Fides.Origination.Lifecycle,
     as: :available
+
+  @doc "What runs on entering each state of a country's life cycle."
+  defdelegate life_cycle_effects(country), to: Fides.Origination.Lifecycle, as: :effects
 end
