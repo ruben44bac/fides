@@ -30,6 +30,13 @@ defmodule FidesWeb.Router do
     plug FidesWeb.Idempotency
   end
 
+  # Public: the health check of whatever runs the node
+  scope "/", FidesWeb do
+    pipe_through :api
+
+    get "/health", HealthController, :show
+  end
+
   # Providers that answer later deliver their data here, signed
   scope "/webhooks", FidesWeb do
     pipe_through :api

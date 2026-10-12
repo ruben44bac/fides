@@ -8,7 +8,7 @@ defmodule Fides.Notifications do
   use Fides.Platform.Domain,
     boundary: [
       deps: [Fides.Platform, Fides.Origination, Fides.Identity, Fides.Countries],
-      exports: [Signature]
+      exports: [Signature, Seeds]
     ]
 
   resources do

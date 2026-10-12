@@ -5,7 +5,7 @@ defmodule Fides.Identity do
   """
 
   use Fides.Platform.Domain,
-    boundary: [deps: [Fides.Platform], exports: [Documents.Samples]]
+    boundary: [deps: [Fides.Platform], exports: [Documents.Samples, Seeds]]
 
   require Ash.Query
 

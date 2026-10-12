@@ -6,7 +6,7 @@ defmodule Fides.Countries do
   """
 
   use Fides.Platform.Domain,
-    boundary: [deps: [Fides.Platform], exports: []]
+    boundary: [deps: [Fides.Platform], exports: [Seeds]]
 
   resources do
     resource Fides.Countries.Country do

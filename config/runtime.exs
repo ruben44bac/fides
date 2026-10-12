@@ -101,6 +101,12 @@ if config_env() == :prod do
   config :fides, Fides.Banking.Callback,
     secret: System.fetch_env!("FIDES_PROVIDER_WEBHOOK_SECRET")
 
+  # A hosted demo has demo staff, with TOTP secrets derived from this phrase as in
+  # development; production leaves it unset and has none
+  if demo_seed = System.get_env("FIDES_DEMO_TOTP_SEED") do
+    config :fides, Fides.Accounts.Demo, totp_seed: :crypto.hash(:sha256, demo_seed)
+  end
+
   host = System.get_env("PHX_HOST") || "example.com"
 
   config :fides, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")

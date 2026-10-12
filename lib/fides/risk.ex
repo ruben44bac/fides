@@ -5,7 +5,7 @@ defmodule Fides.Risk do
   """
 
   use Fides.Platform.Domain,
-    boundary: [deps: [Fides.Platform], exports: []]
+    boundary: [deps: [Fides.Platform], exports: [Seeds]]
 
   resources do
     resource Fides.Risk.PolicyVersion do
