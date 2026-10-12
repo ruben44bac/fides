@@ -4,6 +4,7 @@ defmodule Fides.Risk.PolicyVersionTest do
 
   alias Fides.Factory
   alias Fides.Platform.AuditContext
+  alias Fides.Platform.SystemActor
   alias Fides.Risk
 
   setup do
@@ -14,6 +15,7 @@ defmodule Fides.Risk.PolicyVersionTest do
     actors = %{
       admin: admin,
       auditor: auditor,
+      system: SystemActor.new(:orchestrator),
       proposer: Factory.scoped_staff("MX", :risk_manager, admin),
       approver: Factory.scoped_staff("MX", :risk_manager, admin),
       analyst: Factory.scoped_staff("MX", :analyst, admin),
@@ -94,7 +96,7 @@ defmodule Fides.Risk.PolicyVersionTest do
     test "only risk managers of the country propose or publish", ctx do
       {:ok, draft} = propose(ctx)
 
-      for actor <- [ctx.admin, ctx.auditor, ctx.analyst, ctx.foreign] do
+      for actor <- [ctx.system, ctx.admin, ctx.auditor, ctx.analyst, ctx.foreign] do
         assert {:error, %Ash.Error.Forbidden{}} =
                  Risk.propose_policy(ctx.params, tenant: "MX", actor: actor)
 
@@ -102,11 +104,11 @@ defmodule Fides.Risk.PolicyVersionTest do
       end
     end
 
-    test "staff of the country, admins and auditors read versions, and nobody without a country",
+    test "the system, staff of the country, admins and auditors read versions, and nobody without a country",
          ctx do
       {:ok, _draft} = propose(ctx)
 
-      for actor <- [ctx.analyst, ctx.admin, ctx.auditor] do
+      for actor <- [ctx.system, ctx.analyst, ctx.admin, ctx.auditor] do
         assert [_draft] = Risk.list_policy_versions!(tenant: "MX", actor: actor)
       end
 

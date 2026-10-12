@@ -13,6 +13,7 @@ defmodule Fides.Risk.PolicyVersion do
 
   alias Fides.Platform.Checks.GlobalRole
   alias Fides.Platform.Checks.ScopedRole
+  alias Fides.Platform.Checks.SystemActor
   alias Fides.Risk.PolicyVersion.Changes.NumberAndCheck
   alias Fides.Risk.PolicyVersion.Changes.RetireVersionInForce
   alias Fides.Risk.PolicyVersion.Validations.OtherThanProposer
@@ -98,7 +99,9 @@ defmodule Fides.Risk.PolicyVersion do
   end
 
   policies do
+    # The system evaluates applications under the version in force
     policy action_type(:read) do
+      authorize_if SystemActor
       authorize_if {GlobalRole, roles: [:admin, :auditor]}
       authorize_if {ScopedRole, roles: [:analyst, :risk_manager]}
     end

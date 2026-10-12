@@ -22,6 +22,7 @@ defmodule Fides.Origination do
       define :submit_application, action: :submit
       define :reapply, action: :reapply
       define :get_application, action: :read, get_by: [:id]
+      define :find_application, action: :visible, get_by: [:id], not_found_error?: false
       define :list_applications, action: :read
       define :transition_application, action: :transition, args: [:to, :expected_version]
       define :answer_information_request, action: :respond
