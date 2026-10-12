@@ -1,5 +1,6 @@
 defmodule Fides.Platform.AuditContextTest do
-  use Fides.DataCase, async: true
+  # Seeds the same countries as other tests: running alone avoids waiting on their locks
+  use Fides.DataCase, async: false
 
   alias Fides.Countries.Country
   alias Fides.Platform.AuditContext
