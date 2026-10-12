@@ -1,6 +1,5 @@
 import Config
 config :fides, Oban, testing: :manual
-config :fides, token_signing_secret: "aUfHkQ6ID66hD1M1xWTYp5WNsDfcw9X+"
 config :bcrypt_elixir, log_rounds: 1
 config :ash, policies: [show_policy_breakdowns?: true], disable_async?: true
 
@@ -52,3 +51,11 @@ config :fides, Fides.Platform.Vault,
   keys: [{"V1", :crypto.hash(:sha256, "fides test encryption key")}]
 
 config :fides, Fides.Platform.BlindIndex, key: :crypto.hash(:sha256, "fides test blind index key")
+
+config :fides, Fides.Accounts.StaffUser,
+  token_signing_secret: :crypto.hash(:sha256, "fides test staff token key")
+
+config :fides, Fides.Accounts.Demo, totp_seed: :crypto.hash(:sha256, "fides test totp seed")
+
+# Lets the token task call the endpoint in the test process
+config :fides, Mix.Tasks.Fides.Token, req_options: [plug: {Req.Test, Mix.Tasks.Fides.Token}]

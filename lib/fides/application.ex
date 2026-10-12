@@ -11,6 +11,8 @@ defmodule Fides.Application do
     children = [
       FidesWeb.Telemetry,
       Fides.Platform.Repo,
+      # Sweeps expired tokens
+      {AshAuthentication.Supervisor, otp_app: :fides},
       {DNSCluster, query: Application.get_env(:fides, :dns_cluster_query) || :ignore},
       {Oban,
        AshOban.config(

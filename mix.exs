@@ -83,6 +83,7 @@ defmodule Fides.MixProject do
   defp deps do
     [
       {:carbonite, "~> 0.17.0"},
+      {:nimble_totp, "~> 1.0"},
       {:boundary, "~> 0.11.0", runtime: false},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},

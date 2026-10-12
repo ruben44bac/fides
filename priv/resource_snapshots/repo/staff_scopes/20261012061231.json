@@ -1,0 +1,207 @@
+{
+  "attributes": [
+    {
+      "allow_nil?": false,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": true,
+      "references": {
+        "deferrable": false,
+        "destination_attribute": "id",
+        "destination_attribute_default": null,
+        "destination_attribute_generated": null,
+        "index?": false,
+        "index_where": null,
+        "match_tenant?": false,
+        "match_type": null,
+        "match_with": null,
+        "multitenancy": {
+          "attribute": null,
+          "global": null,
+          "strategy": null
+        },
+        "name": "staff_scopes_user_id_fkey",
+        "on_delete": null,
+        "on_update": null,
+        "primary_key?": true,
+        "schema": "public",
+        "table": "staff_users"
+      },
+      "scale": null,
+      "size": null,
+      "source": "user_id",
+      "type": "uuid"
+    },
+    {
+      "allow_nil?": false,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": true,
+      "references": null,
+      "scale": null,
+      "size": 2,
+      "source": "country_code",
+      "type": "varchar"
+    },
+    {
+      "allow_nil?": false,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "role",
+      "type": "text"
+    },
+    {
+      "allow_nil?": false,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": {
+        "deferrable": false,
+        "destination_attribute": "id",
+        "destination_attribute_default": null,
+        "destination_attribute_generated": null,
+        "index?": false,
+        "index_where": null,
+        "match_tenant?": false,
+        "match_type": null,
+        "match_with": null,
+        "multitenancy": {
+          "attribute": null,
+          "global": null,
+          "strategy": null
+        },
+        "name": "staff_scopes_granted_by_fkey",
+        "on_delete": null,
+        "on_update": null,
+        "primary_key?": true,
+        "schema": "public",
+        "table": "staff_users"
+      },
+      "scale": null,
+      "size": null,
+      "source": "granted_by",
+      "type": "uuid"
+    },
+    {
+      "allow_nil?": true,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "revoked_at",
+      "type": "timestamptz(6)"
+    },
+    {
+      "allow_nil?": true,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": {
+        "deferrable": false,
+        "destination_attribute": "id",
+        "destination_attribute_default": null,
+        "destination_attribute_generated": null,
+        "index?": false,
+        "index_where": null,
+        "match_tenant?": false,
+        "match_type": null,
+        "match_with": null,
+        "multitenancy": {
+          "attribute": null,
+          "global": null,
+          "strategy": null
+        },
+        "name": "staff_scopes_revoked_by_fkey",
+        "on_delete": null,
+        "on_update": null,
+        "primary_key?": true,
+        "schema": "public",
+        "table": "staff_users"
+      },
+      "scale": null,
+      "size": null,
+      "source": "revoked_by",
+      "type": "uuid"
+    },
+    {
+      "allow_nil?": false,
+      "default": "fragment(\"(now() AT TIME ZONE 'utc')\")",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "inserted_at",
+      "type": "timestamptz(6)"
+    },
+    {
+      "allow_nil?": false,
+      "default": "fragment(\"(now() AT TIME ZONE 'utc')\")",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "updated_at",
+      "type": "timestamptz(6)"
+    }
+  ],
+  "base_filter": null,
+  "check_constraints": [],
+  "create_table_options": null,
+  "custom_indexes": [],
+  "custom_statements": [
+    {
+      "after_tables": [
+        "countries"
+      ],
+      "code?": false,
+      "down": "ALTER TABLE staff_scopes DROP CONSTRAINT staff_scopes_country_code_fkey",
+      "global?": false,
+      "name": "country_foreign_key",
+      "up": "ALTER TABLE staff_scopes ADD CONSTRAINT staff_scopes_country_code_fkey FOREIGN KEY (country_code) REFERENCES countries (code)"
+    },
+    {
+      "after_tables": [],
+      "code?": false,
+      "down": "DROP TRIGGER staff_scopes_immutable_columns ON staff_scopes",
+      "global?": false,
+      "name": "immutable_columns",
+      "up": "CREATE TRIGGER staff_scopes_immutable_columns BEFORE UPDATE ON staff_scopes\nFOR EACH ROW EXECUTE FUNCTION fides_forbid_column_change('country_code', 'user_id')\n"
+    },
+    {
+      "after_tables": [],
+      "code?": true,
+      "down": "Carbonite.Migrations.drop_trigger(\"staff_scopes\")",
+      "global?": false,
+      "name": "carbonite_capture",
+      "up": "Carbonite.Migrations.create_trigger(\"staff_scopes\")\nCarbonite.Migrations.put_trigger_config(\"staff_scopes\", :primary_key_columns, [\"user_id\", \"country_code\"])"
+    }
+  ],
+  "has_create_action": true,
+  "hash": "058EEFAEB9D60DE66161368502A892A2A2102250935F1C87041145785AF1F3C0",
+  "identities": [],
+  "multitenancy": {
+    "attribute": "country_code",
+    "global": false,
+    "strategy": "attribute"
+  },
+  "repo": "Elixir.Fides.Platform.Repo",
+  "schema": null,
+  "table": "staff_scopes",
+  "temporal": null
+}

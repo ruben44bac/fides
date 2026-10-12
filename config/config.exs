@@ -66,6 +66,8 @@ config :spark,
       section_order: [
         :json_api,
         :postgres,
+        :authentication,
+        :token,
         :audit,
         :cloak,
         :resource,
@@ -116,7 +118,14 @@ config :spark,
 config :fides,
   ecto_repos: [Fides.Platform.Repo],
   generators: [timestamp_type: :utc_datetime],
-  ash_domains: [Fides.Countries, Fides.Identity, Fides.Banking, Fides.Origination, Fides.Risk]
+  ash_domains: [
+    Fides.Countries,
+    Fides.Accounts,
+    Fides.Identity,
+    Fides.Banking,
+    Fides.Origination,
+    Fides.Risk
+  ]
 
 # Configure the endpoint
 config :fides, FidesWeb.Endpoint,
@@ -172,6 +181,9 @@ config :logger, :default_formatter,
 
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
+
+# Keeps credentials and staff emails out of the request logs
+config :phoenix, :filter_parameters, ["password", "totp_code", "email", "token"]
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
