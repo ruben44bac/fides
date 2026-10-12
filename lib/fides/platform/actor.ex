@@ -16,4 +16,8 @@ defprotocol Fides.Platform.Actor do
   @doc "The role of the actor's active scope in `country`, or nil without one."
   @spec country_role(t(), String.t()) :: :analyst | :risk_manager | nil
   def country_role(actor, country)
+
+  @doc "The countries where the actor's active scopes have one of `roles`."
+  @spec countries(t(), [atom()]) :: [String.t()]
+  def countries(actor, roles)
 end

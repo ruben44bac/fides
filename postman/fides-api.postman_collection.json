@@ -1,0 +1,2189 @@
+{
+  "info": {
+    "name": "Fides API",
+    "description": "The staff API for credit applications. Staff sign in with their password and a TOTP\ncode, and send the bearer token on every other request.\n\n## Before you start\n\n1. Migrate and seed the database: `mix ecto.migrate && mix run priv/repo/seeds.exs`.\n   The seeds create the demo staff and put each country's first policy version in force.\n2. Start the app with `mix phx.server`. `baseUrl` points to http://localhost:4000.\n\n## Running it\n\nRun folders 1 to 6 in order, one by one or with the Collection Runner. The last\nrequest of folder 6 prints a command that moves its three applications to review, as\nthe orchestrator will; run it in a terminal, then run folders 7 to 9.\n\nEvery request that changes something carries an `Idempotency-Key`, a new one each\ntime unless a request repeats one on purpose. Requests save the ids and versions the\nnext ones use as collection variables.\n\nThe demo users' TOTP codes come from the development seed in `totpSeed`, so no\nauthenticator is needed. A code works once per user: the sign-in requests remember\nwhich they used and, when needed, wait up to 30 seconds for the next one.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "1 · Sign in",
+      "description": "Signs the demo staff in and keeps their tokens: the analyst in Spain in `token`, which\nevery request uses unless it says otherwise, and the others for the requests that\nshow what each role may do.\n\nEach request names its user in the `X-Demo-User` header, which never reaches the\nserver: the folder's script takes it out and fills in the user's email and current\nTOTP code. Tokens last 15 minutes; sign in again when requests answer 401.",
+      "item": [
+        {
+          "name": "Analyst in Spain",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test(\"signs in with a bearer token\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(body.token_type).to.eql(\"Bearer\");",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set(\"token\", body.access_token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Demo-User",
+                "value": "analyst_es"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"totp_code\": \"{{totpCode}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/auth/token"
+          },
+          "response": []
+        },
+        {
+          "name": "Risk manager",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test(\"signs in with a bearer token\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(body.token_type).to.eql(\"Bearer\");",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set(\"riskToken\", body.access_token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Demo-User",
+                "value": "risk_manager_1"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"totp_code\": \"{{totpCode}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/auth/token"
+          },
+          "response": []
+        },
+        {
+          "name": "Analyst in Mexico",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test(\"signs in with a bearer token\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(body.token_type).to.eql(\"Bearer\");",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set(\"mxToken\", body.access_token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Demo-User",
+                "value": "analyst_mx"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"totp_code\": \"{{totpCode}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/auth/token"
+          },
+          "response": []
+        },
+        {
+          "name": "Auditor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test(\"signs in with a bearer token\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(body.token_type).to.eql(\"Bearer\");",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set(\"auditorToken\", body.access_token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Demo-User",
+                "value": "auditor"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"totp_code\": \"{{totpCode}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/auth/token"
+          },
+          "response": []
+        },
+        {
+          "name": "Unknown user → 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"answers 401 unauthorized\", () => {",
+                  "  pm.response.to.have.status(401);",
+                  "  pm.expect(pm.response.json().errors[0].code).to.eql(\"unauthorized\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"nobody@fides.test\",\n  \"password\": \"{{password}}\",\n  \"totp_code\": \"000000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/auth/token",
+            "description": "A wrong password or code gets the same answer, so it never tells whether the email exists."
+          },
+          "response": []
+        }
+      ],
+      "auth": {
+        "type": "noauth"
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// The request names a demo staff user in X-Demo-User. This takes the header out and",
+              "// computes the user's email and TOTP code from the development seed, as",
+              "// Fides.Accounts.Demo does. A code works once per user: when the current one is",
+              "// spent, this takes the next step's, which the server also accepts, and past that it",
+              "// waits for the next step.",
+              "const handle = pm.request.headers.get(\"X-Demo-User\");",
+              "pm.variables.set(\"totpHandle\", \"\");",
+              "",
+              "if (handle) {",
+              "  pm.request.headers.remove(\"X-Demo-User\");",
+              "",
+              "  const emails = {",
+              "    admin: \"admin@fides.test\",",
+              "    auditor: \"auditor@fides.test\",",
+              "    analyst_es: \"analyst.es@fides.test\",",
+              "    analyst_mx: \"analyst.mx@fides.test\",",
+              "    risk_manager_1: \"risk.manager1@fides.test\",",
+              "    risk_manager_2: \"risk.manager2@fides.test\"",
+              "  };",
+              "",
+              "  const CryptoJS = require(\"crypto-js\");",
+              "  const seed = CryptoJS.SHA256(pm.collectionVariables.get(\"totpSeed\"));",
+              "  const secret = CryptoJS.HmacSHA1(\"staff_user totp|\" + handle, seed);",
+              "",
+              "  // RFC 6238: HMAC-SHA1 of the 30-second step, six digits",
+              "  const code = step => {",
+              "    const counter = CryptoJS.lib.WordArray.create([Math.floor(step / 0x100000000), step >>> 0], 8);",
+              "    const words = CryptoJS.HmacSHA1(counter, secret).words;",
+              "    const bytes = words.flatMap(w => [w >>> 24, (w >>> 16) & 0xff, (w >>> 8) & 0xff, w & 0xff]);",
+              "    const at = bytes[19] & 0x0f;",
+              "    const binary =",
+              "      ((bytes[at] & 0x7f) << 24) | (bytes[at + 1] << 16) | (bytes[at + 2] << 8) | bytes[at + 3];",
+              "    return String(binary % 1000000).padStart(6, \"0\");",
+              "  };",
+              "",
+              "  const now = () => Math.floor(Date.now() / 30000);",
+              "  const spent = Number(pm.collectionVariables.get(\"totpStep_\" + handle) || 0);",
+              "",
+              "  const signIn = () => {",
+              "    const step = Math.max(now(), spent + 1);",
+              "    pm.variables.set(\"email\", emails[handle]);",
+              "    pm.variables.set(\"totpCode\", code(step));",
+              "    pm.variables.set(\"totpHandle\", handle);",
+              "    pm.variables.set(\"totpStep\", step);",
+              "  };",
+              "",
+              "  if (spent > now()) {",
+              "    const wait = spent * 30000 - Date.now() + 500;",
+              "    console.log(\"Waiting \" + Math.ceil(wait / 1000) + \" s for the next TOTP code of \" + handle);",
+              "    setTimeout(signIn, wait);",
+              "  } else {",
+              "    signIn();",
+              "  }",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// The step of this user's code is spent now, also when the sign-in failed",
+              "const handle = pm.variables.get(\"totpHandle\");",
+              "if (handle) pm.collectionVariables.set(\"totpStep_\" + handle, pm.variables.get(\"totpStep\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2 · Submit",
+      "description": "Submits an application in Spain for a new holder, and shows how commands take an\n`Idempotency-Key`: repeating a request with its key repeats the answer without\nrunning the command again. Then one in Mexico, whose CURP must match the holder.",
+      "item": [
+        {
+          "name": "Submit an application",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// A new holder each time: a holder has at most one open application",
+                  "const digits = String(Math.floor(Math.random() * 1e8)).padStart(8, \"0\");",
+                  "pm.collectionVariables.set(\"document\", digits + \"TRWAGMYFPDXBNJZSQVHLCKE\"[Number(digits) % 23]);",
+                  "",
+                  "// Kept, so the next requests can repeat it",
+                  "pm.collectionVariables.set(\"submitKey\", pm.variables.replaceIn(\"{{$guid}}\"));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const application = pm.response.json();",
+                  "",
+                  "pm.test(\"creates the application in submitted\", () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.expect(application.state).to.eql(\"submitted\");",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set(\"applicationId\", application.id);",
+                  "",
+                  "pm.test(\"never answers with the holder's personal data\", () => {",
+                  "  pm.expect(pm.response.text()).not.to.include(pm.collectionVariables.get(\"document\"));",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set(\"lockVersion\", application.lock_version);",
+                  "pm.collectionVariables.set(\"submittedAt\", application.submitted_at);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.api+json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/vnd.api+json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{submitKey}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {\n    \"country_code\": \"ES\",\n    \"amount_minor\": 1500000,\n    \"monthly_income_minor\": 300000,\n    \"currency\": \"EUR\",\n    \"channel\": \"api\",\n    \"consent_text_version\": \"2026-10\",\n    \"holder\": {\n      \"document_type\": \"DNI\",\n      \"document\": \"{{document}}\",\n      \"given_names\": \"Ana\",\n      \"first_surname\": \"Ruiz\",\n      \"email\": \"ana.{{document}}@example.com\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/applications"
+          },
+          "response": []
+        },
+        {
+          "name": "Repeat it with the same key",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"answers as the first time, without creating another\", () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.expect(pm.response.json().id).to.eql(pm.collectionVariables.get(\"applicationId\"));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.api+json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/vnd.api+json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{submitKey}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {\n    \"country_code\": \"ES\",\n    \"amount_minor\": 1500000,\n    \"monthly_income_minor\": 300000,\n    \"currency\": \"EUR\",\n    \"channel\": \"api\",\n    \"consent_text_version\": \"2026-10\",\n    \"holder\": {\n      \"document_type\": \"DNI\",\n      \"document\": \"{{document}}\",\n      \"given_names\": \"Ana\",\n      \"first_surname\": \"Ruiz\",\n      \"email\": \"ana.{{document}}@example.com\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/applications"
+          },
+          "response": []
+        },
+        {
+          "name": "Same key, another body → 422",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"answers 422 idempotency_key_reused\", () => {",
+                  "  pm.response.to.have.status(422);",
+                  "  pm.expect(pm.response.json().errors[0].code).to.eql(\"idempotency_key_reused\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.api+json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/vnd.api+json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{submitKey}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {\n    \"country_code\": \"ES\",\n    \"amount_minor\": 1600000,\n    \"monthly_income_minor\": 300000,\n    \"currency\": \"EUR\",\n    \"channel\": \"api\",\n    \"consent_text_version\": \"2026-10\",\n    \"holder\": {\n      \"document_type\": \"DNI\",\n      \"document\": \"{{document}}\",\n      \"given_names\": \"Ana\",\n      \"first_surname\": \"Ruiz\",\n      \"email\": \"ana.{{document}}@example.com\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/applications"
+          },
+          "response": []
+        },
+        {
+          "name": "Without Idempotency-Key → 422",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"answers 422 missing_idempotency_key\", () => {",
+                  "  pm.response.to.have.status(422);",
+                  "  pm.expect(pm.response.json().errors[0].code).to.eql(\"missing_idempotency_key\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.api+json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/vnd.api+json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {\n    \"country_code\": \"ES\",\n    \"amount_minor\": 1500000,\n    \"monthly_income_minor\": 300000,\n    \"currency\": \"EUR\",\n    \"channel\": \"api\",\n    \"consent_text_version\": \"2026-10\",\n    \"holder\": {\n      \"document_type\": \"DNI\",\n      \"document\": \"{{document}}\",\n      \"given_names\": \"Ana\",\n      \"first_surname\": \"Ruiz\",\n      \"email\": \"ana.{{document}}@example.com\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/applications"
+          },
+          "response": []
+        },
+        {
+          "name": "Invalid data → 422 for each field",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const errors = pm.response.json().errors;",
+                  "",
+                  "pm.test(\"answers 422 with an error for each field\", () => {",
+                  "  pm.response.to.have.status(422);",
+                  "  const pointers = errors.map(error => error.source && error.source.pointer);",
+                  "  pm.expect(pointers).to.include.members([",
+                  "    \"/data/attributes/amount_minor\",",
+                  "    \"/data/attributes/monthly_income_minor\"",
+                  "  ]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.api+json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/vnd.api+json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {\n    \"country_code\": \"ES\",\n    \"amount_minor\": 0,\n    \"monthly_income_minor\": -1,\n    \"currency\": \"EUR\",\n    \"channel\": \"api\",\n    \"consent_text_version\": \"2026-10\",\n    \"holder\": {\n      \"document_type\": \"DNI\",\n      \"document\": \"{{document}}\",\n      \"given_names\": \"Ana\",\n      \"first_surname\": \"Ruiz\",\n      \"email\": \"ana.{{document}}@example.com\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/applications"
+          },
+          "response": []
+        },
+        {
+          "name": "Submit in Mexico, where the CURP must match the holder",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Gloria Hernández García, born in Veracruz on a new date before 2000 each time",
+                  "const pad = n => String(n).padStart(2, \"0\");",
+                  "const year = 1950 + Math.floor(Math.random() * 50);",
+                  "const month = 1 + Math.floor(Math.random() * 12);",
+                  "const day = 1 + Math.floor(Math.random() * 28);",
+                  "const body = \"HEGG\" + pad(year % 100) + pad(month) + pad(day) + \"MVZRRL0\";",
+                  "",
+                  "// The check digit weighs each character's place in this alphabet",
+                  "const alphabet = \"0123456789ABCDEFGHIJKLMNÑOPQRSTUVWXYZ\";",
+                  "let sum = 0;",
+                  "for (let i = 0; i < 17; i++) sum += alphabet.indexOf(body[i]) * (18 - i);",
+                  "",
+                  "pm.collectionVariables.set(\"curp\", body + ((10 - (sum % 10)) % 10));",
+                  "pm.collectionVariables.set(\"birthDate\", year + \"-\" + pad(month) + \"-\" + pad(day));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const application = pm.response.json();",
+                  "",
+                  "pm.test(\"creates the application in submitted\", () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.expect(application.state).to.eql(\"submitted\");",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set(\"mxApplicationId\", application.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mxToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.api+json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/vnd.api+json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {\n    \"country_code\": \"MX\",\n    \"amount_minor\": 10000000,\n    \"monthly_income_minor\": 3000000,\n    \"currency\": \"MXN\",\n    \"channel\": \"api\",\n    \"consent_text_version\": \"2026-10\",\n    \"holder\": {\n      \"document_type\": \"CURP\",\n      \"document\": \"{{curp}}\",\n      \"given_names\": \"Gloria\",\n      \"first_surname\": \"Hernández\",\n      \"second_surname\": \"García\",\n      \"birth_date\": \"{{birthDate}}\",\n      \"sex\": \"female\",\n      \"email\": \"gloria.{{curp}}@example.com\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/applications",
+            "description": "The CURP encodes the holder's surnames and given name, birth date, sex and state of\nbirth, plus a check digit. Change the birth date in the body to see it refused."
+          },
+          "response": []
+        },
+        {
+          "name": "Without a token → 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"answers 401 unauthorized\", () => {",
+                  "  pm.response.to.have.status(401);",
+                  "  pm.expect(pm.response.json().errors[0].code).to.eql(\"unauthorized\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.api+json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/vnd.api+json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {\n    \"country_code\": \"ES\",\n    \"amount_minor\": 1500000,\n    \"monthly_income_minor\": 300000,\n    \"currency\": \"EUR\",\n    \"channel\": \"api\",\n    \"consent_text_version\": \"2026-10\",\n    \"holder\": {\n      \"document_type\": \"DNI\",\n      \"document\": \"{{document}}\",\n      \"given_names\": \"Ana\",\n      \"first_surname\": \"Ruiz\",\n      \"email\": \"ana.{{document}}@example.com\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/applications"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3 · Move",
+      "description": "Moves the application through its life cycle. Each move names the version of the\napplication it expects, and fails without changes when the application changed since.",
+      "item": [
+        {
+          "name": "Available moves",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const moves = pm.response.json();",
+                  "",
+                  "pm.test(\"lists the moves the analyst may make, and the current version\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(moves.state).to.eql(\"submitted\");",
+                  "  pm.expect(moves.transitions).to.eql([\"cancelled\"]);",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set(\"lockVersion\", moves.lock_version);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.api+json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/applications/{{applicationId}}/transitions"
+          },
+          "response": []
+        },
+        {
+          "name": "A move the life cycle does not allow → 422",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"answers 422 transition_not_allowed\", () => {",
+                  "  pm.response.to.have.status(422);",
+                  "  pm.expect(pm.response.json().errors[0].code).to.eql(\"transition_not_allowed\");",
+                  "});",
+                  "",
+                  "pm.test(\"lists the moves allowed instead\", () => {",
+                  "  pm.expect(pm.response.json().errors[0].meta.available).to.eql([\"cancelled\"]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.api+json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/vnd.api+json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {\n    \"to\": \"approved\",\n    \"reason\": \"Looks good\",\n    \"expected_version\": {{lockVersion}}\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/applications/{{applicationId}}/transitions"
+          },
+          "response": []
+        },
+        {
+          "name": "A version that is no longer current → 409",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// As if someone else had moved the application after we read it",
+                  "pm.variables.set(\"staleVersion\", Number(pm.collectionVariables.get(\"lockVersion\")) - 1);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"answers 409 stale\", () => {",
+                  "  pm.response.to.have.status(409);",
+                  "  pm.expect(pm.response.json().errors[0].code).to.eql(\"stale\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.api+json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/vnd.api+json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {\n    \"to\": \"cancelled\",\n    \"reason\": \"The holder withdrew\",\n    \"expected_version\": {{staleVersion}}\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/applications/{{applicationId}}/transitions"
+          },
+          "response": []
+        },
+        {
+          "name": "The auditor may not move it → 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"answers 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auditorToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.api+json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/vnd.api+json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {\n    \"to\": \"cancelled\",\n    \"reason\": \"The holder withdrew\",\n    \"expected_version\": {{lockVersion}}\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/applications/{{applicationId}}/transitions"
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const application = pm.response.json();",
+                  "",
+                  "pm.test(\"moves the application to cancelled\", () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.expect(application.state).to.eql(\"cancelled\");",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set(\"lockVersion\", application.lock_version);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.api+json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/vnd.api+json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {\n    \"to\": \"cancelled\",\n    \"reason\": \"The holder withdrew\",\n    \"expected_version\": {{lockVersion}}\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/applications/{{applicationId}}/transitions"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "4 · Retry",
+      "description": "Retries the cancelled application as a new one of the same holder, with new terms\nand consent.",
+      "item": [
+        {
+          "name": "Reapply",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const application = pm.response.json();",
+                  "",
+                  "pm.test(\"creates the application in submitted\", () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.expect(application.state).to.eql(\"submitted\");",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set(\"retryId\", application.id);",
+                  "",
+                  "pm.test(\"points to the application it retries\", () => {",
+                  "  pm.expect(application.previous_application_id).to.eql(pm.collectionVariables.get(\"applicationId\"));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.api+json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/vnd.api+json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {\n    \"amount_minor\": 1200000,\n    \"monthly_income_minor\": 300000,\n    \"channel\": \"api\",\n    \"consent_text_version\": \"2026-10\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/applications/{{applicationId}}/reapply"
+          },
+          "response": []
+        },
+        {
+          "name": "Reapply again → 422",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"answers 422\", () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.api+json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/vnd.api+json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {\n    \"amount_minor\": 1200000,\n    \"monthly_income_minor\": 300000,\n    \"channel\": \"api\",\n    \"consent_text_version\": \"2026-10\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/applications/{{applicationId}}/reapply",
+            "description": "A holder has at most one open application, and each application is retried once."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "5 · Read",
+      "description": "Reads applications: by id, as a list with filters and keyset pages, and by the\nholder's document, which travels in the body so it never reaches a URL or a log.\nStaff see the applications of their countries; admins and auditors, all of them.",
+      "item": [
+        {
+          "name": "Get an application",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const application = pm.response.json().data;",
+                  "",
+                  "pm.test(\"answers the application as JSON:API\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(application.type).to.eql(\"application\");",
+                  "  pm.expect(application.id).to.eql(pm.collectionVariables.get(\"applicationId\"));",
+                  "  pm.expect(application.attributes.state).to.eql(\"cancelled\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.api+json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/applications/{{applicationId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "List, newest first",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const page = pm.response.json();",
+                  "",
+                  "pm.test(\"answers a page with a link to the next one\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(page.data).to.have.lengthOf(1);",
+                  "  pm.expect(page.links.next).to.be.a(\"string\");",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set(\"nextPage\", page.links.next);",
+                  "pm.collectionVariables.set(\"newestSubmittedAt\", page.data[0].attributes.submitted_at);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.api+json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/applications?filter[country_code]=ES&page[limit]=1"
+          },
+          "response": []
+        },
+        {
+          "name": "Next page",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const page = pm.response.json();",
+                  "",
+                  "pm.test(\"goes on with older applications\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(page.data[0].attributes.submitted_at <= pm.collectionVariables.get(\"newestSubmittedAt\")).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.api+json"
+              }
+            ],
+            "url": "{{nextPage}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Filter by state, amount and date",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"finds the cancelled application\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const ids = pm.response.json().data.map(application => application.id);",
+                  "  pm.expect(ids).to.include(pm.collectionVariables.get(\"applicationId\"));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.api+json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/applications?filter[state]=cancelled&filter[amount_minor][greater_than_or_equal]=1500000&filter[submitted_at][greater_than_or_equal]={{submittedAt}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Search by document",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const page = pm.response.json();",
+                  "",
+                  "pm.test(\"finds the holder's newest application, and a cursor for the next\", () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.expect(page.data.map(application => application.id)).to.eql([pm.collectionVariables.get(\"retryId\")]);",
+                  "  pm.expect(page.next).to.be.a(\"string\");",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set(\"searchNext\", page.next);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.api+json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/vnd.api+json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {\n    \"country_code\": \"ES\",\n    \"document\": \"{{document}}\",\n    \"limit\": 1\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/applications/search",
+            "description": "A search changes nothing, so it takes no Idempotency-Key. It answers 201, as every POST route of the API."
+          },
+          "response": []
+        },
+        {
+          "name": "Search, next page",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const page = pm.response.json();",
+                  "",
+                  "pm.test(\"finds the older application, and no more\", () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.expect(page.data.map(application => application.id)).to.eql([pm.collectionVariables.get(\"applicationId\")]);",
+                  "  pm.expect(page.next).to.be.null;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.api+json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/vnd.api+json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {\n    \"country_code\": \"ES\",\n    \"document\": \"{{document}}\",\n    \"limit\": 1,\n    \"after\": \"{{searchNext}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/applications/search"
+          },
+          "response": []
+        },
+        {
+          "name": "Search with filters",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"finds only the cancelled application\", () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const ids = pm.response.json().data.map(application => application.id);",
+                  "  pm.expect(ids).to.eql([pm.collectionVariables.get(\"applicationId\")]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.api+json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/vnd.api+json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {\n    \"country_code\": \"ES\",\n    \"document\": \"{{document}}\",\n    \"state\": \"cancelled\",\n    \"min_amount_minor\": 1000000,\n    \"max_amount_minor\": 2000000,\n    \"submitted_from\": \"{{submittedAt}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/applications/search"
+          },
+          "response": []
+        },
+        {
+          "name": "Another country's analyst → 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"answers 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mxToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.api+json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/applications/{{applicationId}}",
+            "description": "Out of the actor's countries, an application does not exist for them."
+          },
+          "response": []
+        },
+        {
+          "name": "The auditor reads every country",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"finds the Mexican application\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const ids = pm.response.json().data.map(application => application.id);",
+                  "  pm.expect(ids).to.include(pm.collectionVariables.get(\"mxApplicationId\"));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auditorToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.api+json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/applications?filter[country_code]=MX&page[limit]=5"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "6 · Review: prepare",
+      "description": "Submits three applications, for three ways out of review: one to request more\ninformation, one to approve, and one above the countersign threshold of Spain's\npolicy (50 000 EUR). The orchestrator will move applications to review on its own;\nuntil then, the last request prints the command that does it.",
+      "item": [
+        {
+          "name": "Submit one to request information",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const application = pm.response.json();",
+                  "",
+                  "pm.test(\"creates the application in submitted\", () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.expect(application.state).to.eql(\"submitted\");",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set(\"infoId\", application.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.api+json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/vnd.api+json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {\n    \"country_code\": \"ES\",\n    \"amount_minor\": 1500000,\n    \"monthly_income_minor\": 300000,\n    \"currency\": \"EUR\",\n    \"channel\": \"api\",\n    \"consent_text_version\": \"2026-10\",\n    \"holder\": {\n      \"document_type\": \"DNI\",\n      \"document\": \"{{reviewDocument}}\",\n      \"given_names\": \"Ana\",\n      \"first_surname\": \"Ruiz\",\n      \"email\": \"ana.{{reviewDocument}}@example.com\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/applications"
+          },
+          "response": []
+        },
+        {
+          "name": "Submit one to approve",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const application = pm.response.json();",
+                  "",
+                  "pm.test(\"creates the application in submitted\", () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.expect(application.state).to.eql(\"submitted\");",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set(\"approveId\", application.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.api+json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/vnd.api+json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {\n    \"country_code\": \"ES\",\n    \"amount_minor\": 2500000,\n    \"monthly_income_minor\": 300000,\n    \"currency\": \"EUR\",\n    \"channel\": \"api\",\n    \"consent_text_version\": \"2026-10\",\n    \"holder\": {\n      \"document_type\": \"DNI\",\n      \"document\": \"{{reviewDocument}}\",\n      \"given_names\": \"Ana\",\n      \"first_surname\": \"Ruiz\",\n      \"email\": \"ana.{{reviewDocument}}@example.com\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/applications"
+          },
+          "response": []
+        },
+        {
+          "name": "Submit one above the countersign threshold",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const application = pm.response.json();",
+                  "",
+                  "pm.test(\"creates the application in submitted\", () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.expect(application.state).to.eql(\"submitted\");",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set(\"countersignId\", application.id);",
+                  "",
+                  "const command =",
+                  "  \"mix fides.advance \" +",
+                  "  [\"infoId\", \"approveId\", \"countersignId\"].map(name => pm.collectionVariables.get(name)).join(\" \");",
+                  "",
+                  "console.log(command);",
+                  "pm.visualizer.set(\"<p>Move the three applications to review, then run the next folder:</p><pre>{{command}}</pre>\", { command });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.api+json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/vnd.api+json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {\n    \"country_code\": \"ES\",\n    \"amount_minor\": 6000000,\n    \"monthly_income_minor\": 300000,\n    \"currency\": \"EUR\",\n    \"channel\": \"api\",\n    \"consent_text_version\": \"2026-10\",\n    \"holder\": {\n      \"document_type\": \"DNI\",\n      \"document\": \"{{reviewDocument}}\",\n      \"given_names\": \"Ana\",\n      \"first_surname\": \"Ruiz\",\n      \"email\": \"ana.{{reviewDocument}}@example.com\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/applications"
+          },
+          "response": []
+        }
+      ],
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// A new holder each time: a holder has at most one open application",
+              "const digits = String(Math.floor(Math.random() * 1e8)).padStart(8, \"0\");",
+              "pm.collectionVariables.set(\"reviewDocument\", digits + \"TRWAGMYFPDXBNJZSQVHLCKE\"[Number(digits) % 23]);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "7 · Review: after mix fides.advance",
+      "description": "Run `mix fides.advance` with the ids of the previous folder first: the last request\nthere prints the command, also in the Postman console.\n\nAn analyst asks for information, approves, or, above the countersign threshold,\nsends the approval to a risk manager, who countersigns it.",
+      "item": [
+        {
+          "name": "Moves in review",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const moves = pm.response.json();",
+                  "",
+                  "pm.test(\"is waiting for review\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(moves.state, \"run mix fides.advance with the ids from the previous folder\").to.eql(\"in_review\");",
+                  "});",
+                  "",
+                  "pm.test(\"lists the moves the analyst may make\", () => {",
+                  "  pm.expect(moves.transitions).to.have.members([\"approved\",\"rejected\",\"info_requested\",\"cancelled\"]);",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set(\"infoVersion\", moves.lock_version);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.api+json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/applications/{{infoId}}/transitions"
+          },
+          "response": []
+        },
+        {
+          "name": "Request information",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const application = pm.response.json();",
+                  "",
+                  "pm.test(\"moves the application to info_requested\", () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.expect(application.state).to.eql(\"info_requested\");",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set(\"infoVersion\", application.lock_version);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.api+json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/vnd.api+json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {\n    \"to\": \"info_requested\",\n    \"reason\": \"Send the last three payslips\",\n    \"expected_version\": {{infoVersion}}\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/applications/{{infoId}}/transitions"
+          },
+          "response": []
+        },
+        {
+          "name": "Answer with corrected terms",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const application = pm.response.json();",
+                  "",
+                  "pm.test(\"records the next revision and goes back to validation\", () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.expect(application.state).to.eql(\"validating\");",
+                  "  pm.expect(application.revision).to.eql(2);",
+                  "  pm.expect(application.amount_minor).to.eql(1200000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.api+json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/vnd.api+json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {\n    \"amount_minor\": 1200000,\n    \"monthly_income_minor\": 320000,\n    \"expected_version\": {{infoVersion}}\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/applications/{{infoId}}/revisions",
+            "description": "The corrected terms become the next revision, and the application goes back to validation."
+          },
+          "response": []
+        },
+        {
+          "name": "Moves of the one to approve",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const moves = pm.response.json();",
+                  "",
+                  "pm.test(\"is waiting for review\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(moves.state, \"run mix fides.advance with the ids from the previous folder\").to.eql(\"in_review\");",
+                  "});",
+                  "",
+                  "pm.test(\"lists the moves the analyst may make\", () => {",
+                  "  pm.expect(moves.transitions).to.have.members([\"approved\",\"rejected\",\"info_requested\",\"cancelled\"]);",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set(\"approveVersion\", moves.lock_version);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.api+json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/applications/{{approveId}}/transitions"
+          },
+          "response": []
+        },
+        {
+          "name": "Approve",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const application = pm.response.json();",
+                  "",
+                  "pm.test(\"moves the application to approved\", () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.expect(application.state).to.eql(\"approved\");",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set(\"approveVersion\", application.lock_version);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.api+json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/vnd.api+json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {\n    \"to\": \"approved\",\n    \"reason\": \"Income covers the instalments\",\n    \"expected_version\": {{approveVersion}}\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/applications/{{approveId}}/transitions"
+          },
+          "response": []
+        },
+        {
+          "name": "Moves above the countersign threshold",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const moves = pm.response.json();",
+                  "",
+                  "pm.test(\"is waiting for review\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(moves.state, \"run mix fides.advance with the ids from the previous folder\").to.eql(\"in_review\");",
+                  "});",
+                  "",
+                  "pm.test(\"lists the moves the analyst may make\", () => {",
+                  "  pm.expect(moves.transitions).to.have.members([\"pending_countersign\",\"rejected\",\"info_requested\",\"cancelled\"]);",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set(\"countersignVersion\", moves.lock_version);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.api+json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/applications/{{countersignId}}/transitions",
+            "description": "Above the threshold, the analyst approves pending a countersignature."
+          },
+          "response": []
+        },
+        {
+          "name": "Approve, pending a countersignature",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const application = pm.response.json();",
+                  "",
+                  "pm.test(\"moves the application to pending_countersign\", () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.expect(application.state).to.eql(\"pending_countersign\");",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set(\"countersignVersion\", application.lock_version);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.api+json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/vnd.api+json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {\n    \"to\": \"pending_countersign\",\n    \"reason\": \"Income covers the instalments\",\n    \"expected_version\": {{countersignVersion}}\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/applications/{{countersignId}}/transitions"
+          },
+          "response": []
+        },
+        {
+          "name": "Countersign as the risk manager",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const application = pm.response.json();",
+                  "",
+                  "pm.test(\"moves the application to approved\", () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.expect(application.state).to.eql(\"approved\");",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set(\"countersignVersion\", application.lock_version);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{riskToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.api+json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/vnd.api+json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {\n    \"to\": \"approved\",\n    \"reason\": \"Countersigned\",\n    \"expected_version\": {{countersignVersion}}\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/applications/{{countersignId}}/transitions"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "8 · Docs",
+      "description": "The OpenAPI document of the API, public. Swagger UI shows it at `/api/swaggerui`,\nfor example http://localhost:4000/api/swaggerui.",
+      "item": [
+        {
+          "name": "OpenAPI document",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const document = pm.response.json();",
+                  "",
+                  "pm.test(\"describes the API\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(document.openapi).to.match(/^3\\./);",
+                  "  pm.expect(document.paths).to.have.property(\"/api/applications/{id}/transitions\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/open_api"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "9 · Sign out",
+      "description": "Revokes the analyst's token: the next request with it answers 401. Sign in again to\ngo on.",
+      "item": [
+        {
+          "name": "Sign out",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"answers 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/token"
+          },
+          "response": []
+        },
+        {
+          "name": "The revoked token → 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"answers 401 unauthorized\", () => {",
+                  "  pm.response.to.have.status(401);",
+                  "  pm.expect(pm.response.json().errors[0].code).to.eql(\"unauthorized\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.api+json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/applications"
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:4000",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "fides demo password",
+      "type": "string"
+    },
+    {
+      "key": "totpSeed",
+      "value": "fides development totp seed",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "riskToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "mxToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "auditorToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "document",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "submitKey",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "applicationId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "lockVersion",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "submittedAt",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "curp",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "birthDate",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "mxApplicationId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "retryId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "nextPage",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "newestSubmittedAt",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "searchNext",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "reviewDocument",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "infoId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "infoVersion",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "approveId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "approveVersion",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "countersignId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "countersignVersion",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

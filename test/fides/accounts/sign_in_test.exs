@@ -34,7 +34,6 @@ defmodule Fides.Accounts.SignInTest do
   defp expire_lock(user),
     do: Factory.update_staff_user(user, locked_until: DateTime.add(DateTime.utc_now(), -1))
 
-  @tag spec: "ACCT-07"
   test "a password and a current code give a short-lived token", ctx do
     assert {:ok, token, claims} = Accounts.sign_in(ctx.email, ctx.password, code(ctx.secret))
 
@@ -44,7 +43,6 @@ defmodule Fides.Accounts.SignInTest do
     assert [%{jti: ^jti}] = tokens(ctx.user)
   end
 
-  @tag spec: "ACCT-07"
   test "without the right code there is no token", ctx do
     for code <- [Factory.wrong_code(ctx.secret), "", "28708", "abcdef", nil] do
       assert Accounts.sign_in(ctx.email, ctx.password, code) == {:error, :authentication_failed}
@@ -53,7 +51,6 @@ defmodule Fides.Accounts.SignInTest do
     assert tokens(ctx.user) == []
   end
 
-  @tag spec: "ACCT-07"
   test "no action signs in, registers or issues a token with the password alone" do
     strategy = AshAuthentication.Info.strategy!(StaffUser, :password)
 
@@ -68,7 +65,6 @@ defmodule Fides.Accounts.SignInTest do
     end
   end
 
-  @tag spec: "ACCT-07"
   test "a staff user who never set up the second factor cannot sign in", ctx do
     Factory.update_staff_user(ctx.user, mfa_enrolled_at: nil)
 

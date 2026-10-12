@@ -17,7 +17,6 @@ defmodule Fides.Platform.AuditContextTest do
   defp seed(attrs \\ @mx), do: Fides.Countries.seed_country(attrs, actor: SystemActor.new(:test))
 
   describe "without an audit context" do
-    @tag spec: "AUDT-01"
     test "a write to an audited table fails in the database" do
       assert {:error, error} = seed()
 
@@ -27,7 +26,6 @@ defmodule Fides.Platform.AuditContextTest do
       assert Fides.Countries.list_countries!() == []
     end
 
-    @tag spec: "AUDT-08"
     test "only the factory can write, and capture is back on afterwards" do
       Fides.Factory.countries()
       assert length(Fides.Countries.list_countries!()) == 6
@@ -41,7 +39,6 @@ defmodule Fides.Platform.AuditContextTest do
   end
 
   describe "with an audit context" do
-    @tag spec: "AUDT-02"
     test "the transaction records actor, action, reason, country, correlation, trace and code" do
       AuditContext.put(
         actor: "system:test",
@@ -67,7 +64,6 @@ defmodule Fides.Platform.AuditContextTest do
       assert change.table_pk == ["MX"]
     end
 
-    @tag spec: "AUDT-04"
     test "bulk writes run inside an audited transaction" do
       AuditContext.put(actor: "system:test", reason: "bulk seed")
 
@@ -82,7 +78,6 @@ defmodule Fides.Platform.AuditContextTest do
       assert length(changes) == 6
     end
 
-    @tag spec: "AUDT-04"
     test "the repo never runs an action or an atomic update without a transaction" do
       assert Fides.Platform.Repo.prefer_transaction?()
       assert Fides.Platform.Repo.prefer_transaction_for_atomic_updates?()
@@ -162,7 +157,6 @@ defmodule Fides.Platform.AuditContextTest do
     assert %{reason: "outer"} = AuditContext.get()
   end
 
-  @tag spec: "AUDT-05"
   test "no audited table is partitioned" do
     %{rows: rows} =
       Fides.Platform.Repo.query!("""

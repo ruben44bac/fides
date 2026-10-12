@@ -16,9 +16,11 @@ defmodule Fides.Platform.DataInventory do
   def render do
     domains = Application.fetch_env!(:fides, :ash_domains)
 
+    # A resource without attributes, such as one that only runs commands, keeps no data
     sections =
       for domain <- Enum.sort(domains),
-          resource <- Enum.sort(Ash.Domain.Info.resources(domain)) do
+          resource <- Enum.sort(Ash.Domain.Info.resources(domain)),
+          Ash.Resource.Info.attributes(resource) != [] do
         render_resource(resource)
       end
 

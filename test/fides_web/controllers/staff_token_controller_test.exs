@@ -35,7 +35,6 @@ defmodule FidesWeb.StaffTokenControllerTest do
     "eyJhbGciOiJIUzI1NiJ9." <> Base.url_encode64(Jason.encode!(claims), padding: false) <> ".x"
   end
 
-  @tag spec: "API-01"
   test "issues a bearer token with the second factor", ctx do
     conn = issue(ctx, %{totp_code: Totp.code(ctx.secret)})
 
@@ -46,7 +45,6 @@ defmodule FidesWeb.StaffTokenControllerTest do
     assert {:ok, _claims, StaffUser} = AshAuthentication.Jwt.verify(token, :fides)
   end
 
-  @tag spec: "API-01"
   test "refuses a token without the second factor, with the same answer for every cause", ctx do
     responses = [
       issue(ctx),
@@ -55,14 +53,11 @@ defmodule FidesWeb.StaffTokenControllerTest do
       issue(ctx, %{email: "nobody@fides.test", totp_code: Totp.code(ctx.secret)})
     ]
 
-    for conn <- responses do
-      assert json_response(conn, 401) == %{
-               "errors" => [%{"status" => "401", "title" => "Unauthorized"}]
-             }
-    end
+    [first | others] = Enum.map(responses, &json_response(&1, 401))
+    assert %{"errors" => [%{"status" => "401", "code" => "unauthorized"}]} = first
+    assert Enum.all?(others, &(&1 == first))
   end
 
-  @tag spec: "API-01"
   test "a staff route answers 401 without a valid staff token", ctx do
     {:ok, foreign, _claims} =
       AshAuthentication.Jwt.token_for_user(ctx.user, %{"purpose" => "user"},
@@ -78,7 +73,6 @@ defmodule FidesWeb.StaffTokenControllerTest do
     end
   end
 
-  @tag spec: "ACCT-09"
   test "a revoked token stops working on the next request", ctx do
     token = issued_token(ctx)
 

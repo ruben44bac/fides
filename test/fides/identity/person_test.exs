@@ -42,7 +42,6 @@ defmodule Fides.Identity.PersonTest do
            }
   end
 
-  @tag spec: "IDEN-08"
   property "resolving a registered document returns the same holder" do
     check all document <- Fides.Identity.Generators.dni(),
               emails <- list_of(string(?a..?z, min_length: 3), min_length: 2, max_length: 4),
@@ -67,7 +66,6 @@ defmodule Fides.Identity.PersonTest do
     assert Ash.read!(Fides.Identity.Person, tenant: "ES", actor: @system) == []
   end
 
-  @tag spec: "AUDT-02"
   test "the evidence records the holder's country even when the caller did not name it" do
     {:ok, _person} = resolve(@holder, "ES")
 
@@ -75,7 +73,6 @@ defmodule Fides.Identity.PersonTest do
              current_carbonite_transaction().meta
   end
 
-  @tag spec: "IDEN-09"
   test "no document, name or email appears in clear in the database or the evidence" do
     {:ok, _person} = resolve(@holder)
 
@@ -92,13 +89,11 @@ defmodule Fides.Identity.PersonTest do
   end
 
   describe "country isolation" do
-    @tag spec: "MULT-04"
     test "holders cannot be read or written without a country" do
       assert {:error, %Ash.Error.Invalid{}} = Ash.read(Fides.Identity.Person, actor: @system)
       assert {:error, %Ash.Error.Invalid{}} = Identity.resolve_person(@holder, actor: @system)
     end
 
-    @tag spec: "MULT-01"
     test "a holder cannot use a document type of another country" do
       error =
         assert_raise Postgrex.Error, fn ->
@@ -115,7 +110,6 @@ defmodule Fides.Identity.PersonTest do
       assert error.postgres.constraint == "people_document_type_fkey"
     end
 
-    @tag spec: "MULT-02"
     test "a holder's country cannot change" do
       {:ok, person} = resolve(@holder)
 
@@ -130,7 +124,6 @@ defmodule Fides.Identity.PersonTest do
     end
   end
 
-  @tag spec: "PLAT-07"
   test "ids are UUIDv7 whether Ash or SQL creates the row" do
     {:ok, person} = resolve(@holder)
     assert <<_::binary-size(14), "7", _::binary>> = person.id

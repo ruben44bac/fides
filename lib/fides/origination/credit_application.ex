@@ -11,13 +11,27 @@ defmodule Fides.Origination.CreditApplication do
   as well.
   """
 
-  use Fides.Platform.Resource, domain: Fides.Origination
+  use Fides.Platform.Resource,
+    domain: Fides.Origination,
+    extensions: [AshJsonApi.Resource]
 
   alias Fides.Origination.CreditApplication.Changes
   alias Fides.Origination.Lifecycle
   alias Fides.Platform.Checks.GlobalRole
+  alias Fides.Platform.Checks.InScopedCountry
   alias Fides.Platform.Checks.ScopedRole
   alias Fides.Platform.Checks.SystemActor
+
+  # Reads only: the commands are in Fides.Origination.ApplicationCommands
+  json_api do
+    type "application"
+
+    routes do
+      base "/applications"
+      get :visible
+      index :visible
+    end
+  end
 
   postgres do
     table "credit_applications"
@@ -142,6 +156,18 @@ defmodule Fides.Origination.CreditApplication do
   actions do
     defaults [:read]
 
+    read :visible do
+      description """
+      Applications in every country where the actor works, newest first; in every
+      country for admins and auditors. Out of the actor's countries, an application
+      does not exist for them.
+      """
+
+      multitenancy :allow_global
+      pagination keyset?: true, required?: false, default_limit: 25, max_page_size: 100
+      prepare fn query, _context -> Ash.Query.default_sort(query, submitted_at: :desc) end
+    end
+
     create :submit do
       description """
       Receives an application in the tenant's country: resolves its holder, records
@@ -151,21 +177,10 @@ defmodule Fides.Origination.CreditApplication do
 
       accept [:amount_minor, :monthly_income_minor, :currency, :channel]
 
-      argument :holder, :map do
+      argument :holder, Fides.Origination.Holder do
         description "The holder's document and data, checked against each other."
         allow_nil? false
         sensitive? true
-
-        constraints fields: [
-                      document_type: [type: :string, allow_nil?: false],
-                      document: [type: :string, allow_nil?: false],
-                      given_names: [type: :string, allow_nil?: false],
-                      first_surname: [type: :string, allow_nil?: false],
-                      second_surname: [type: :string],
-                      email: [type: :string, allow_nil?: false],
-                      birth_date: [type: :date],
-                      sex: [type: :atom, constraints: [one_of: [:female, :male]]]
-                    ]
       end
 
       argument :consent_text_version, :string do
@@ -256,7 +271,13 @@ defmodule Fides.Origination.CreditApplication do
   end
 
   policies do
-    policy action_type(:read) do
+    policy action(:visible) do
+      authorize_if SystemActor
+      authorize_if {GlobalRole, roles: [:admin, :auditor]}
+      authorize_if {InScopedCountry, roles: [:analyst, :risk_manager]}
+    end
+
+    policy action(:read) do
       authorize_if SystemActor
       authorize_if {GlobalRole, roles: [:admin, :auditor]}
       authorize_if {ScopedRole, roles: [:analyst, :risk_manager]}

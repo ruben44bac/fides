@@ -4,7 +4,6 @@ defmodule Fides.Countries.SeedsTest do
 
   alias Fides.Countries.Seeds
 
-  @tag spec: "CTRY-01"
   test "creates the six countries with their currency and data region, and is idempotent" do
     Seeds.run()
     first = snapshot()
@@ -22,7 +21,6 @@ defmodule Fides.Countries.SeedsTest do
     assert snapshot() == first
   end
 
-  @tag spec: "CTRY-05"
   test "seeding writes with the system actor and its reason" do
     Seeds.run()
 
@@ -31,7 +29,6 @@ defmodule Fides.Countries.SeedsTest do
     assert meta["reason"] == "seed reference data"
   end
 
-  @tag spec: "CTRY-05"
   test "writing a country without an audit context fails" do
     [es | _] = Seeds.countries()
 

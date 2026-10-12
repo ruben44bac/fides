@@ -55,7 +55,6 @@ defmodule Fides.Origination.CreditApplicationTest do
   end
 
   describe "submitting" do
-    @tag spec: "ORIG-01"
     test "creates the application in submitted with its first revision and holder", ctx do
       before = DateTime.utc_now()
       assert {:ok, application} = submit(ctx)
@@ -74,14 +73,12 @@ defmodule Fides.Origination.CreditApplicationTest do
       assert byte_size(revision.content_hash) == 32
     end
 
-    @tag spec: "ORIG-01"
     test "the state and the submission time are always the server's", ctx do
       for field <- [state: :approved, submitted_at: ~U[2020-01-01 00:00:00Z], revision: 7] do
         assert {:error, %Ash.Error.Invalid{}} = submit(ctx, [field])
       end
     end
 
-    @tag spec: "IDEN-12"
     test "records the holder's consent with its purpose, text version, channel and time", ctx do
       {:ok, application} = submit(ctx, channel: :form)
 
@@ -91,7 +88,6 @@ defmodule Fides.Origination.CreditApplicationTest do
       assert %DateTime{} = consent.accepted_at
     end
 
-    @tag spec: "ORIG-02"
     test "amounts that are not positive minor units, or another currency, create nothing", ctx do
       for overrides <- [
             [amount_minor: 0],
@@ -116,7 +112,6 @@ defmodule Fides.Origination.CreditApplicationTest do
       assert applications() == []
     end
 
-    @tag spec: "ORIG-03"
     test "a holder with an application in progress cannot submit another", ctx do
       holder = Factory.holder()
       {:ok, _first} = submit(ctx, holder: holder)
@@ -128,7 +123,6 @@ defmodule Fides.Origination.CreditApplicationTest do
   end
 
   describe "retrying" do
-    @tag spec: "ORIG-11"
     test "a rejected or cancelled application is retried once, by the same holder", ctx do
       {:ok, first} = submit(ctx)
       {:ok, cancelled} = move(first, :cancelled, ctx.analyst)
@@ -153,7 +147,6 @@ defmodule Fides.Origination.CreditApplicationTest do
       assert Exception.message(error) =~ "has already been retried"
     end
 
-    @tag spec: "ORIG-11"
     test "an application in progress is not retried", ctx do
       {:ok, open} = submit(ctx)
 
@@ -173,7 +166,6 @@ defmodule Fides.Origination.CreditApplicationTest do
       assert Exception.message(error) =~ "is not an application of the country"
     end
 
-    @tag spec: "ORIG-11"
     test "the database refuses a retry pointing to another holder's application", ctx do
       {:ok, first} = submit(ctx)
       {:ok, _cancelled} = move(first, :cancelled, ctx.analyst)
@@ -194,7 +186,6 @@ defmodule Fides.Origination.CreditApplicationTest do
   end
 
   describe "the database" do
-    @tag spec: "ORIG-07"
     test "refuses any change to an application in a final state", ctx do
       {:ok, application} = submit(ctx)
       {:ok, cancelled} = move(application, :cancelled, ctx.analyst)
@@ -217,7 +208,6 @@ defmodule Fides.Origination.CreditApplicationTest do
                2
     end
 
-    @tag spec: "ORIG-10"
     test "refuses to change or delete a revision", ctx do
       {:ok, application} = submit(ctx)
       id = Ecto.UUID.dump!(application.id)
@@ -241,7 +231,6 @@ defmodule Fides.Origination.CreditApplicationTest do
   end
 
   describe "who may" do
-    @tag spec: "SEC-02"
     test "only analysts of the country, or the system, submit", ctx do
       for actor <- [ctx.admin, ctx.auditor, ctx.risk_manager, ctx.foreign] do
         assert {:error, %Ash.Error.Forbidden{}} = submit(ctx, %{}, actor)
@@ -250,7 +239,6 @@ defmodule Fides.Origination.CreditApplicationTest do
       assert {:ok, _application} = submit(ctx, %{}, @system)
     end
 
-    @tag spec: "MULT-04"
     test "staff of the country, admins and auditors read applications, and nobody without a country",
          ctx do
       {:ok, _application} = submit(ctx)
