@@ -4,7 +4,6 @@ defmodule Fides.ReferenceDataTest do
 
   alias Fides.Platform.SystemActor
 
-  @tag spec: "CTRY-02"
   test "every active country has document types, a bank provider, a policy and a life cycle" do
     Fides.Factory.reference_data()
 

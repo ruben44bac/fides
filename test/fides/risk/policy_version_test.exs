@@ -55,7 +55,6 @@ defmodule Fides.Risk.PolicyVersionTest do
   end
 
   describe "putting a version in force" do
-    @tag spec: "RISK-11"
     test "takes a risk manager other than the proposer", ctx do
       {:ok, draft} = propose(ctx)
 
@@ -92,7 +91,6 @@ defmodule Fides.Risk.PolicyVersionTest do
   end
 
   describe "who may" do
-    @tag spec: "SEC-02"
     test "only risk managers of the country propose or publish", ctx do
       {:ok, draft} = propose(ctx)
 
@@ -104,7 +102,6 @@ defmodule Fides.Risk.PolicyVersionTest do
       end
     end
 
-    @tag spec: "MULT-04"
     test "staff of the country, admins and auditors read versions, and nobody without a country",
          ctx do
       {:ok, _draft} = propose(ctx)
@@ -119,7 +116,6 @@ defmodule Fides.Risk.PolicyVersionTest do
   end
 
   describe "the database" do
-    @tag spec: "RISK-11"
     test "refuses a version approved by its proposer or in force without an approver", ctx do
       {:ok, draft} = propose(ctx)
 

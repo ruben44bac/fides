@@ -24,7 +24,6 @@ defmodule Mix.Tasks.Fides.TokenTest do
     %{user: user}
   end
 
-  @tag spec: "API-01"
   test "prints a token for a demo staff user" do
     Token.run(["analyst_mx"])
 

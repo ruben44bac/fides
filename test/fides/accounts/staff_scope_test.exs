@@ -31,7 +31,6 @@ defmodule Fides.Accounts.StaffScopeTest do
   defp scopes(user), do: Enum.map(as_actor(user).active_scopes, &{&1.country_code, &1.role})
 
   describe "granting and revoking" do
-    @tag spec: "ACCT-10"
     test "only the admin grants or revokes, and each scope records who did", ctx do
       # Refused before anything is said about the grantee, whoever it is
       for actor <- [ctx.auditor, as_actor(ctx.analyst), nil],
@@ -53,7 +52,6 @@ defmodule Fides.Accounts.StaffScopeTest do
       assert %DateTime{} = revoked.revoked_at
     end
 
-    @tag spec: "ACCT-10"
     test "a revoked scope stops authorizing on the next request and keeps its row", ctx do
       assert scopes(ctx.analyst) == [{"MX", :analyst}]
 
@@ -82,7 +80,6 @@ defmodule Fides.Accounts.StaffScopeTest do
       assert scopes(ctx.analyst) == [{"MX", :risk_manager}]
     end
 
-    @tag spec: "SEC-02"
     test "admins and auditors never act through country scopes", ctx do
       for user <- [ctx.admin, ctx.auditor] do
         assert {:error, error} =
@@ -148,7 +145,6 @@ defmodule Fides.Accounts.StaffScopeTest do
       assert other_id == other.id
     end
 
-    @tag spec: "MULT-04"
     test "only global roles read every country at once", ctx do
       for actor <- [ctx.admin, ctx.auditor] do
         assert [%{country_code: "MX"}] = Accounts.list_all_scopes!(actor: actor)

@@ -31,7 +31,6 @@ defmodule Fides.Accounts.SeedsTest do
              [{"MX", :analyst}]
   end
 
-  @tag spec: "API-01"
   test "every demo staff user signs in with the shared password and their own code" do
     Seeds.run()
 

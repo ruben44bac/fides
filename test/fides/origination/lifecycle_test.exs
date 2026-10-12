@@ -8,7 +8,6 @@ defmodule Fides.Origination.LifecycleTest do
   @within %{amount_minor: 4_000, countersign_above_minor: 5_000}
   @above %{amount_minor: 6_000, countersign_above_minor: 5_000}
 
-  @tag spec: "ORIG-04"
   test "a transition the life cycle does not allow fails with the valid ones" do
     assert Lifecycle.transition("MX", :submitted, :approved, :system) ==
              {:error, {:not_allowed, [:validating]}}
@@ -16,7 +15,6 @@ defmodule Fides.Origination.LifecycleTest do
     assert Lifecycle.transition("MX", :submitted, :validating, :system) == {:ok, :validating}
   end
 
-  @tag spec: "ORIG-06"
   test "a person never performs a system transition, and the system never a person's" do
     for country <- Lifecycle.countries(), transition <- Lifecycle.transitions(country) do
       humans = Enum.filter(transition.actors, &(&1 in @humans))
@@ -29,7 +27,6 @@ defmodule Fides.Origination.LifecycleTest do
     end
   end
 
-  @tag spec: "ORIG-07"
   test "final states have no way out" do
     for country <- Lifecycle.countries(),
         state <- Lifecycle.final_states(),
@@ -40,7 +37,6 @@ defmodule Fides.Origination.LifecycleTest do
     end
   end
 
-  @tag spec: "ORIG-08"
   test "every open state can be cancelled by the applicant and by an analyst" do
     for country <- Lifecycle.countries(),
         state <- Lifecycle.states() -- Lifecycle.final_states(),
@@ -49,7 +45,6 @@ defmodule Fides.Origination.LifecycleTest do
     end
   end
 
-  @tag spec: "ORIG-12"
   test "reevaluation returns to evaluating only from review, and only by the system" do
     for country <- Lifecycle.countries() do
       into_evaluating =
@@ -60,7 +55,6 @@ defmodule Fides.Origination.LifecycleTest do
     end
   end
 
-  @tag spec: "ORIG-13"
   test "an analyst's approval above the countersign threshold needs a risk manager" do
     assert :approved in Lifecycle.available("ES", :in_review, :analyst, @within)
     refute :pending_countersign in Lifecycle.available("ES", :in_review, :analyst, @within)
@@ -84,7 +78,6 @@ defmodule Fides.Origination.LifecycleTest do
     assert :rejected in available
   end
 
-  @tag spec: "ORIG-15"
   property "random sequences of transitions never leave a final state or skip the life cycle" do
     check all country <- member_of(Lifecycle.countries()),
               amount <- integer(1..10_000),

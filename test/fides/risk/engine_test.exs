@@ -69,7 +69,6 @@ defmodule Fides.Risk.EngineTest do
     end
   end
 
-  @tag spec: "RISK-01"
   property "the same inputs and policy give the same rules, outcome and hash" do
     check all inputs <- inputs() do
       first = evaluate(inputs)
@@ -80,7 +79,6 @@ defmodule Fides.Risk.EngineTest do
   end
 
   describe "country rules" do
-    @tag spec: "RISK-02"
     property "Spain sends amounts above 20 000 EUR to review" do
       check all amount <- integer(1..10_000_000) do
         expected = if amount > 2_000_000, do: :review, else: :approve
@@ -88,7 +86,6 @@ defmodule Fides.Risk.EngineTest do
       end
     end
 
-    @tag spec: "RISK-03"
     property "Portugal approves up to 6 times the income, reviews up to 8 and rejects above" do
       check all income <- integer(1..1_000_000), amount <- integer(1..10_000_000) do
         expected =
@@ -109,7 +106,6 @@ defmodule Fides.Risk.EngineTest do
       end
     end
 
-    @tag spec: "RISK-04"
     property "Italy approves income in each of the last six months of at least 1 200 EUR" do
       check all months <- integer(0..6), income <- integer(1..500_000) do
         expected = if months == 6 and income >= 120_000, do: :approve, else: :reject
@@ -125,7 +121,6 @@ defmodule Fides.Risk.EngineTest do
       end
     end
 
-    @tag spec: "RISK-05"
     property "Mexico approves a monthly income of at least 20% of the amount" do
       check all income <- integer(1..1_000_000), amount <- integer(1..10_000_000) do
         expected = if income * 5 >= amount, do: :approve, else: :reject
@@ -141,7 +136,6 @@ defmodule Fides.Risk.EngineTest do
       end
     end
 
-    @tag spec: "RISK-06"
     property "Colombia approves a total debt of up to 5 times the monthly income" do
       check all income <- integer(1..1_000_000), debt <- integer(0..10_000_000) do
         expected = if debt <= 5 * income, do: :approve, else: :reject
@@ -157,7 +151,6 @@ defmodule Fides.Risk.EngineTest do
       end
     end
 
-    @tag spec: "RISK-07"
     property "Brazil approves from 600, reviews from 450 and rejects below" do
       check all score <- integer(0..1000) do
         expected =
@@ -173,7 +166,6 @@ defmodule Fides.Risk.EngineTest do
   end
 
   describe "common rules" do
-    @tag spec: "RISK-08"
     property "failing eligibility rejects, whatever the country and history say" do
       check all inputs <- inputs(),
                 failure <- member_of([:invalid_document, :underage, :no_declared_income]) do
@@ -190,7 +182,6 @@ defmodule Fides.Risk.EngineTest do
       end
     end
 
-    @tag spec: "RISK-09"
     property "a rejection within 30 days sends to review, unless another rule rejects" do
       check all country <- member_of(Engine.countries()), days_ago <- integer(0..60) do
         inputs = clean(country, previous_rejection_on: Date.add(@today, -days_ago))
@@ -205,7 +196,6 @@ defmodule Fides.Risk.EngineTest do
       end
     end
 
-    @tag spec: "RISK-18"
     property "observed income more than 15% below the declared one sends to review" do
       check all country <- member_of(Engine.countries()),
                 declared <- integer(200_000..1_000_000),
@@ -230,7 +220,6 @@ defmodule Fides.Risk.EngineTest do
   end
 
   describe "metamorphic relations" do
-    @tag spec: "RISK-10"
     property "raising the observed income never worsens the outcome" do
       check all inputs <- inputs(), raise <- integer(0..5_000_000) do
         raised = %{inputs | observed_income_minor: inputs.observed_income_minor + raise}
@@ -238,7 +227,6 @@ defmodule Fides.Risk.EngineTest do
       end
     end
 
-    @tag spec: "RISK-10"
     property "raising the declared and observed income together never worsens the outcome" do
       check all inputs <- inputs(), raise <- integer(0..5_000_000) do
         raised = %{
@@ -251,7 +239,6 @@ defmodule Fides.Risk.EngineTest do
       end
     end
 
-    @tag spec: "RISK-10"
     property "raising the amount never improves the outcome" do
       check all inputs <- inputs(), raise <- integer(0..50_000_000) do
         raised = %{inputs | amount_minor: inputs.amount_minor + raise}
@@ -260,7 +247,6 @@ defmodule Fides.Risk.EngineTest do
     end
   end
 
-  @tag spec: "RISK-17"
   test "the engine's inputs carry no personal data" do
     assert inputs_fields() == [
              :adult?,

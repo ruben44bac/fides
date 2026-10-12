@@ -64,7 +64,6 @@ defmodule Fides.Banking.AdaptersTest do
 
   defp fixture(name), do: File.read!(Path.join(@fixtures, name))
 
-  @tag spec: "BANK-01"
   test "every provider's recorded answer becomes the normalized profile" do
     for {key, file, expected} <- @recorded do
       assert Adapters.parse(key, fixture(file)) == {:ok, expected}, key
@@ -77,14 +76,12 @@ defmodule Fides.Banking.AdaptersTest do
   end
 
   describe "malformed answers" do
-    @tag spec: "BANK-07"
     test "an answer in another format is malformed, whatever the provider" do
       for {key, _file, _expected} <- @recorded do
         assert Adapters.parse(key, "not an answer") == {:error, {:malformed, :body}}, key
       end
     end
 
-    @tag spec: "BANK-07"
     test "a missing or invalid field is malformed and named" do
       for {key, file, _expected} <- @recorded,
           key != "it_xml",
@@ -99,7 +96,6 @@ defmodule Fides.Banking.AdaptersTest do
       end
     end
 
-    @tag spec: "BANK-07"
     test "an Italian answer missing a field or with a negative value is malformed" do
       xml = fixture("it.xml")
 
@@ -226,7 +222,6 @@ defmodule Fides.Banking.AdaptersTest do
     end
   end
 
-  @tag spec: "BANK-02"
   property "only the last four characters of an account survive" do
     check all account <- string(:alphanumeric, min_length: 4, max_length: 34) do
       answer = put_in(Jason.decode!(fixture("es.json")), ["cliente", "iban"], account)

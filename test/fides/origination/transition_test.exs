@@ -65,7 +65,6 @@ defmodule Fides.Origination.TransitionTest do
     do: Enum.find(errors, &match?(%TransitionNotAllowed{}, &1))
 
   describe "the life cycle" do
-    @tag spec: "ORIG-04"
     test "a move it does not allow fails and lists the allowed ones", ctx do
       application = submit(ctx)
 
@@ -80,7 +79,6 @@ defmodule Fides.Origination.TransitionTest do
                "cannot move from submitted to approved; allowed: cancelled"
     end
 
-    @tag spec: "ORIG-06"
     test "people never make the system's moves, and the system never makes people's", ctx do
       application = to_review(ctx)
 
@@ -109,7 +107,6 @@ defmodule Fides.Origination.TransitionTest do
                move(application, :validating, @system, %{reason: nil})
     end
 
-    @tag spec: "ORIG-07"
     test "nothing moves an application out of a final state", ctx do
       cancelled = ctx |> submit() |> move!(:cancelled, ctx.analyst)
 
@@ -121,7 +118,6 @@ defmodule Fides.Origination.TransitionTest do
       assert Exception.message(error) =~ "allowed: none"
     end
 
-    @tag spec: "ORIG-08"
     test "the applicant's side cancels from any state that is not final", ctx do
       assert {:ok, %{state: :cancelled}} = ctx |> submit() |> move(:cancelled, ctx.analyst)
       assert {:ok, %{state: :cancelled}} = ctx |> to_review() |> move(:cancelled, ctx.analyst)
@@ -129,7 +125,6 @@ defmodule Fides.Origination.TransitionTest do
   end
 
   describe "the expected version" do
-    @tag spec: "ORIG-05"
     test "a move with another version fails and changes nothing", ctx do
       application = submit(ctx)
       moved = move!(application, :validating, @system)
@@ -156,7 +151,6 @@ defmodule Fides.Origination.TransitionTest do
   end
 
   describe "countersignature" do
-    @tag spec: "ORIG-13"
     test "an approval above the threshold goes to a risk manager", ctx do
       application = to_review(ctx, amount_minor: @countersign_above + 1)
 
@@ -169,7 +163,6 @@ defmodule Fides.Origination.TransitionTest do
       assert {:ok, %{state: :approved}} = move(pending, :approved, ctx.risk_manager)
     end
 
-    @tag spec: "ORIG-13"
     test "a risk manager may also send it back to review", ctx do
       pending =
         ctx
@@ -207,7 +200,6 @@ defmodule Fides.Origination.TransitionTest do
   end
 
   describe "answering a request for information" do
-    @tag spec: "ORIG-09"
     test "adds the next revision, copies its terms and goes back to validation", ctx do
       requested = ctx |> to_review() |> move!(:info_requested, ctx.analyst)
 
@@ -236,7 +228,6 @@ defmodule Fides.Origination.TransitionTest do
       assert {second.amount_minor, second.monthly_income_minor} == {900_000, 350_000}
     end
 
-    @tag spec: "ORIG-09"
     test "is the only way back to validation", ctx do
       requested = ctx |> to_review() |> move!(:info_requested, ctx.analyst)
 
@@ -244,7 +235,6 @@ defmodule Fides.Origination.TransitionTest do
       assert Exception.message(error) =~ "only by answering with the corrected terms"
     end
 
-    @tag spec: "ORIG-09"
     test "is refused in any other state", ctx do
       application = to_review(ctx)
 
@@ -265,7 +255,6 @@ defmodule Fides.Origination.TransitionTest do
   end
 
   describe "re-evaluating" do
-    @tag spec: "ORIG-12"
     test "the system sends a reviewed application back to evaluation, with its cause", ctx do
       application = to_review(ctx)
 
@@ -288,7 +277,6 @@ defmodule Fides.Origination.TransitionTest do
                )
     end
 
-    @tag spec: "ORIG-12"
     test "only from review", ctx do
       application = ctx |> submit() |> move!(:validating, @system)
 
@@ -306,7 +294,6 @@ defmodule Fides.Origination.TransitionTest do
   end
 
   describe "the evidence" do
-    @tag spec: "AUDT-02"
     test "records the person's reason for a move", ctx do
       application = Factory.insert(fn -> submit(ctx) end)
 

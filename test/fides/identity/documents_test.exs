@@ -8,7 +8,6 @@ defmodule Fides.Identity.DocumentsTest do
   alias Fides.Identity.Generators, as: G
 
   describe "Spain" do
-    @tag spec: "IDEN-01"
     property "accepts every valid DNI and NIE" do
       check all dni <- G.dni(), nie <- G.nie() do
         assert {:ok, %{document: ^dni, birth_date: nil}} = Documents.validate("ES", "DNI", dni)
@@ -16,7 +15,6 @@ defmodule Fides.Identity.DocumentsTest do
       end
     end
 
-    @tag spec: "IDEN-01"
     property "rejects a DNI or NIE with one digit or the letter changed" do
       check all dni <- G.dni(),
                 nie <- G.nie(),
@@ -29,7 +27,6 @@ defmodule Fides.Identity.DocumentsTest do
   end
 
   describe "Portugal" do
-    @tag spec: "IDEN-02"
     property "accepts every valid NIF and rejects it with the check digit changed" do
       check all nif <- G.nif(), bad <- G.mutate_digit(nif, [8]) do
         assert {:ok, _result} = Documents.validate("PT", "NIF", nif)
@@ -39,7 +36,6 @@ defmodule Fides.Identity.DocumentsTest do
   end
 
   describe "Italy" do
-    @tag spec: "IDEN-03"
     property "accepts every valid codice fiscale, omocodia included" do
       check all {holder, code} <- G.italian() do
         birth_date = holder.birth_date
@@ -47,7 +43,6 @@ defmodule Fides.Identity.DocumentsTest do
       end
     end
 
-    @tag spec: "IDEN-03"
     property "rejects a code that does not match the birth date, the sex or the names" do
       check all {holder, code} <- G.italian(),
                 shift <- integer(1..400),
@@ -72,7 +67,6 @@ defmodule Fides.Identity.DocumentsTest do
       end
     end
 
-    @tag spec: "IDEN-03"
     property "rejects a code with the control character changed" do
       check all {holder, code} <- G.italian(), bad <- G.mutate_letter(code, 15) do
         assert {:error, [:invalid_check_character]} = Documents.validate("IT", "CF", bad, holder)
@@ -93,7 +87,6 @@ defmodule Fides.Identity.DocumentsTest do
   end
 
   describe "Mexico" do
-    @tag spec: "IDEN-04"
     property "accepts every valid CURP and returns the birth date it encodes" do
       check all {holder, curp} <- G.mexican() do
         birth_date = holder.birth_date
@@ -101,14 +94,12 @@ defmodule Fides.Identity.DocumentsTest do
       end
     end
 
-    @tag spec: "IDEN-04"
     property "rejects a CURP with the check digit changed" do
       check all {holder, curp} <- G.mexican(), bad <- G.mutate_digit(curp, [17]) do
         assert {:error, [:invalid_check_digit]} = Documents.validate("MX", "CURP", bad, holder)
       end
     end
 
-    @tag spec: "IDEN-04"
     property "rejects a CURP that does not match the birth date or the names" do
       check all {holder, curp} <- G.mexican(),
                 shift <- integer(1..400),
@@ -168,7 +159,6 @@ defmodule Fides.Identity.DocumentsTest do
   end
 
   describe "Colombia" do
-    @tag spec: "IDEN-05"
     property "accepts six to ten digits and rejects any other format" do
       check all cedula <- G.cedula(),
                 short <- G.digits(5),
@@ -183,7 +173,6 @@ defmodule Fides.Identity.DocumentsTest do
   end
 
   describe "Brazil" do
-    @tag spec: "IDEN-06"
     property "accepts every valid CPF and rejects it with a check digit changed" do
       check all cpf <- G.cpf(), bad <- G.mutate_digit(cpf, [9, 10]) do
         assert {:ok, _result} = Documents.validate("BR", "CPF", cpf)
@@ -191,7 +180,6 @@ defmodule Fides.Identity.DocumentsTest do
       end
     end
 
-    @tag spec: "IDEN-06"
     test "rejects repeated sequences" do
       for digit <- ?0..?9 do
         assert {:error, [:repeated_digits]} =

@@ -50,7 +50,6 @@ defmodule Fides.Origination.InvariantsTest do
 
   defp amount, do: integer(1..10_000_000)
 
-  @tag spec: "ORIG-15"
   property "random sequences of commands never break the life cycle's invariants", ctx do
     check all commands <- list_of(command(), min_length: 30, max_length: 80), max_runs: 60 do
       holders = for _holder <- 1..3, do: Factory.holder()

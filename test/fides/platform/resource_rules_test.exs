@@ -4,7 +4,6 @@ defmodule Fides.Platform.ResourceRulesTest do
   alias Fides.Platform.Classification
 
   describe "classification" do
-    @tag spec: "PLAT-01"
     test "a resource with an unclassified attribute does not compile" do
       assert_raise Spark.Error.DslError, ~r/attributes without classification: \[:notes\]/, fn ->
         defmodule Elixir.Fides.Countries.UnclassifiedProbe do
@@ -24,7 +23,6 @@ defmodule Fides.Platform.ResourceRulesTest do
       end
     end
 
-    @tag spec: "PLAT-01"
     test "classifying an attribute that does not exist does not compile" do
       assert_raise Spark.Error.DslError,
                    ~r/classification for unknown attributes: \[:ghost\]/,
@@ -66,7 +64,6 @@ defmodule Fides.Platform.ResourceRulesTest do
   end
 
   describe "context isolation" do
-    @tag spec: "PLAT-04"
     test "a relationship to another context does not compile" do
       assert_raise Spark.Error.DslError, ~r/outside context Fides.Countries/, fn ->
         defmodule Elixir.Fides.Countries.CrossProbe do
@@ -108,7 +105,6 @@ defmodule Fides.Platform.ResourceRulesTest do
       end
     end
 
-    @tag spec: "PLAT-04"
     test "a resource cannot use another context's domain" do
       assert_raise Spark.Error.DslError, ~r/must use a domain of Fides.Risk/, fn ->
         defmodule Elixir.Fides.Risk.MisplacedProbe do

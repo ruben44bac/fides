@@ -27,7 +27,6 @@ defmodule Fides.Platform.VaultTest do
     assert_raise ArgumentError, ~r/tampered/, fn -> Vault.decrypt!(tampered) end
   end
 
-  @tag spec: "IDEN-10"
   test "rotating the encryption key keeps old values readable and the hashes unchanged", %{
     keys: keys
   } do
