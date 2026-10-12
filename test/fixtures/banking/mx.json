@@ -1,0 +1,12 @@
+{
+  "event_id": "evt_01J9MX0000000000000000000",
+  "sequence": 3,
+  "request_id": "req_01J9MX0000000000000000000",
+  "perfil": {
+    "ingreso_mensual": 30000.50,
+    "deuda_total": 120000,
+    "meses_con_ingreso": 6,
+    "score": 690,
+    "clabe": "002010077777777771"
+  }
+}

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<profilo>
+  <reddito_mensile valuta="EUR">2500.00</reddito_mensile>
+  <debito_totale valuta="EUR">12000.00</debito_totale>
+  <mesi_con_reddito>6</mesi_con_reddito>
+  <punteggio>700</punteggio>
+  <iban>IT60X0542811101000000123456</iban>
+</profilo>

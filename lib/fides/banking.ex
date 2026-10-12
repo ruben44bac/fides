@@ -5,7 +5,7 @@ defmodule Fides.Banking do
   """
 
   use Fides.Platform.Domain,
-    boundary: [deps: [Fides.Platform], exports: []]
+    boundary: [deps: [Fides.Platform, Jason, Decimal], exports: []]
 
   resources do
     resource Fides.Banking.BankProvider do
