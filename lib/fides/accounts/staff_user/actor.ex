@@ -9,4 +9,9 @@ defimpl Fides.Platform.Actor, for: Fides.Accounts.StaffUser do
     do: Enum.find_value(scopes, &(&1.country_code == country and &1.role))
 
   def country_role(_user, _country), do: nil
+
+  def countries(%{global_role: nil, active_scopes: scopes}, roles) when is_list(scopes),
+    do: for(scope <- scopes, scope.role in roles, do: scope.country_code)
+
+  def countries(_user, _roles), do: []
 end

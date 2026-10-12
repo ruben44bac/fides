@@ -7,6 +7,8 @@ defmodule Fides.Identity do
   use Fides.Platform.Domain,
     boundary: [deps: [Fides.Platform], exports: []]
 
+  require Ash.Query
+
   resources do
     resource Fides.Identity.DocumentType do
       define :list_document_types, action: :read
@@ -22,6 +24,20 @@ defmodule Fides.Identity do
       define :accept_consent, action: :accept
       define :list_consents, action: :read
     end
+  end
+
+  @doc """
+  The holder of a document in a country, or nil. Found by the document's keyed hash,
+  so nothing is decrypted.
+  """
+  @spec holder_of_document(String.t(), String.t()) ::
+          {:ok, Fides.Identity.Person.t() | nil} | {:error, term()}
+  def holder_of_document(country, document) do
+    hash = Fides.Platform.BlindIndex.document(country, document)
+
+    Fides.Identity.Person
+    |> Ash.Query.filter(document_hash == ^hash)
+    |> Ash.read_one(tenant: country, authorize?: false)
   end
 
   @doc "Validates a document for a country, against the holder's data when the document encodes it."

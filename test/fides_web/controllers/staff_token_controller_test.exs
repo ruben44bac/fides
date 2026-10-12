@@ -53,11 +53,9 @@ defmodule FidesWeb.StaffTokenControllerTest do
       issue(ctx, %{email: "nobody@fides.test", totp_code: Totp.code(ctx.secret)})
     ]
 
-    for conn <- responses do
-      assert json_response(conn, 401) == %{
-               "errors" => [%{"status" => "401", "title" => "Unauthorized"}]
-             }
-    end
+    [first | others] = Enum.map(responses, &json_response(&1, 401))
+    assert %{"errors" => [%{"status" => "401", "code" => "unauthorized"}]} = first
+    assert Enum.all?(others, &(&1 == first))
   end
 
   test "a staff route answers 401 without a valid staff token", ctx do

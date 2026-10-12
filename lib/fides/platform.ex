@@ -25,6 +25,7 @@ defmodule Fides.Platform do
       Checks.SystemActor,
       Checks.GlobalRole,
       Checks.ScopedRole,
+      Checks.InScopedCountry,
       Context,
       DataInventory,
       Classification,

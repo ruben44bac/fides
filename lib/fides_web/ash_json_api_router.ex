@@ -1,7 +1,11 @@
 defmodule FidesWeb.AshJsonApiRouter do
-  @moduledoc "JSON:API routes generated from the domains, with their OpenAPI document."
+  @moduledoc """
+  The JSON:API routes generated from the domains' resources, mounted at `/api`
+  behind staff authentication. The OpenAPI document is served publicly by
+  `FidesWeb.OpenApiController`.
+  """
 
   use AshJsonApi.Router,
-    domains: [],
-    open_api: "/open_api"
+    domains: [Fides.Origination],
+    prefix: "/api"
 end

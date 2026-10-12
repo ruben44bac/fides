@@ -5,7 +5,17 @@ defmodule Fides.Origination do
   """
 
   use Fides.Platform.Domain,
-    boundary: [deps: [Fides.Platform, Fides.Identity, Fides.Risk], exports: []]
+    boundary: [
+      deps: [Fides.Platform, Fides.Identity, Fides.Risk],
+      exports: [TransitionNotAllowed]
+    ],
+    extensions: [AshJsonApi.Domain]
+
+  # Client mistakes are answered, not logged as errors
+  json_api do
+    log_errors? false
+    error_handler {Fides.Origination.JsonApiErrors, :handle, []}
+  end
 
   resources do
     resource Fides.Origination.CreditApplication do
@@ -21,6 +31,8 @@ defmodule Fides.Origination do
     resource Fides.Origination.ApplicationRevision do
       define :list_revisions, action: :read
     end
+
+    resource Fides.Origination.ApplicationCommands
   end
 
   @doc "The target states an actor may move an application to from `state`."

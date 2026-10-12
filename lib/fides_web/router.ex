@@ -22,26 +22,34 @@ defmodule FidesWeb.Router do
 
   pipeline :staff_api do
     plug FidesWeb.AuthenticateStaff
+    plug FidesWeb.Idempotency
   end
 
+  # Public: signing in, and the document that describes the API
   scope "/api", FidesWeb do
     pipe_through :api
 
     post "/auth/token", StaffTokenController, :create
+    get "/open_api", OpenApiController, :show
   end
 
+  scope "/api" do
+    pipe_through :api
+
+    forward "/swaggerui", OpenApiSpex.Plug.SwaggerUI,
+      path: "/api/open_api",
+      default_model_expand_depth: 4
+  end
+
+  # Everything else takes a staff bearer token
   scope "/api", FidesWeb do
     pipe_through [:api, :staff_api]
 
     delete "/auth/token", StaffTokenController, :delete
   end
 
-  scope "/api/json" do
-    pipe_through [:api]
-
-    forward "/swaggerui", OpenApiSpex.Plug.SwaggerUI,
-      path: "/api/json/open_api",
-      default_model_expand_depth: 4
+  scope "/api" do
+    pipe_through [:api, :staff_api]
 
     forward "/", FidesWeb.AshJsonApiRouter
   end
