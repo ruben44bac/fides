@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Fides API",
-    "description": "The staff API for credit applications. Staff sign in with their password and a TOTP\ncode, and send the bearer token on every other request.\n\n## Before you start\n\n1. Migrate and seed the database: `mix ecto.migrate && mix run priv/repo/seeds.exs`.\n   The seeds create the demo staff and put each country's first policy version in force.\n2. Start the app with `mix phx.server`. `baseUrl` points to http://localhost:4000.\n\n## Running it\n\nRun folders 1 to 6 in order, one by one or with the Collection Runner. The last\nrequest of folder 6 prints a command that moves its three applications to review, as\nthe orchestrator will; run it in a terminal, then run folders 7 to 9.\n\nEvery request that changes something carries an `Idempotency-Key`, a new one each\ntime unless a request repeats one on purpose. Requests save the ids and versions the\nnext ones use as collection variables.\n\nThe demo users' TOTP codes come from the development seed in `totpSeed`, so no\nauthenticator is needed. A code works once per user: the sign-in requests remember\nwhich they used and, when needed, wait up to 30 seconds for the next one.",
+    "description": "The staff API for credit applications. Staff sign in with their password and a TOTP\ncode, and send the bearer token on every other request.\n\n## Before you start\n\n1. Migrate and seed the database: `mix ecto.migrate && mix run priv/repo/seeds.exs`.\n   The seeds create the demo staff and put each country's first policy version in force.\n2. Start the app with `mix phx.server`. `baseUrl` points to http://localhost:4000.\n\n## Running it\n\nRun folders 1 to 6 in order, one by one or with the Collection Runner. The\norchestrator validates each application as it arrives; the last request of folder 6\nprints a command that moves its three applications on to review, as the orchestrator\nwill once its bank and risk agents exist. Run it in a terminal, then run folders 7\nto 9.\n\nEvery request that changes something carries an `Idempotency-Key`, a new one each\ntime unless a request repeats one on purpose. Requests save the ids and versions the\nnext ones use as collection variables.\n\nThe demo users' TOTP codes come from the development seed in `totpSeed`, so no\nauthenticator is needed. A code works once per user: the sign-in requests remember\nwhich they used and, when needed, wait up to 30 seconds for the next one.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -727,7 +727,7 @@
     },
     {
       "name": "3 · Move",
-      "description": "Moves the application through its life cycle. Each move names the version of the\napplication it expects, and fails without changes when the application changed since.",
+      "description": "Moves the application through its life cycle. Each move names the version of the\napplication it expects, and fails without changes when the application changed since.\n\nThe orchestrator validates the holder as soon as the application arrives, so each\nrequest here first waits, up to 15 seconds, until the application rests.",
       "item": [
         {
           "name": "Available moves",
@@ -741,7 +741,7 @@
                   "",
                   "pm.test(\"lists the moves the analyst may make, and the current version\", () => {",
                   "  pm.response.to.have.status(200);",
-                  "  pm.expect(moves.state).to.eql(\"submitted\");",
+                  "  pm.expect(moves.state).to.be.oneOf([\"submitted\", \"validating\", \"awaiting_bank_data\"]);",
                   "  pm.expect(moves.transitions).to.eql([\"cancelled\"]);",
                   "});",
                   "",
@@ -966,6 +966,33 @@
             "url": "{{baseUrl}}/api/applications/{{applicationId}}/transitions"
           },
           "response": []
+        }
+      ],
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// The orchestrator validates the holder as soon as the application arrives. The moves",
+              "// here wait until it rests, so they do not race it: up to 15 seconds.",
+              "const url = pm.variables.replaceIn(\"{{baseUrl}}/api/applications/{{applicationId}}/transitions\");",
+              "const header = [",
+              "  { key: \"Authorization\", value: \"Bearer \" + pm.collectionVariables.get(\"token\") },",
+              "  { key: \"Accept\", value: \"application/vnd.api+json\" }",
+              "];",
+              "const deadline = Date.now() + 15000;",
+              "",
+              "const wait = () =>",
+              "  pm.sendRequest({ url, method: \"GET\", header }, (error, response) => {",
+              "    const state = !error && response.code === 200 ? response.json().state : null;",
+              "    if ((state && ![\"submitted\", \"validating\"].includes(state)) || Date.now() > deadline) return;",
+              "    setTimeout(wait, 500);",
+              "  });",
+              "",
+              "wait();"
+            ]
+          }
         }
       ]
     },
@@ -1412,7 +1439,7 @@
     },
     {
       "name": "6 · Review: prepare",
-      "description": "Submits three applications, for three ways out of review: one to request more\ninformation, one to approve, and one above the countersign threshold of Spain's\npolicy (50 000 EUR). The orchestrator will move applications to review on its own;\nuntil then, the last request prints the command that does it.",
+      "description": "Submits three applications, for three ways out of review: one to request more\ninformation, one to approve, and one above the countersign threshold of Spain's\npolicy (50 000 EUR). The orchestrator validates each holder on its own; until its bank\nand risk agents exist, the last request prints the command that moves the three on to\nreview.",
       "item": [
         {
           "name": "Submit one to request information",
