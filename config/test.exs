@@ -45,3 +45,10 @@ config :phoenix_live_view,
 # Sort query params output of verified routes for robust url comparisons
 config :phoenix,
   sort_verified_routes_query_params: true
+
+# Test keys, derived from fixed phrases: they protect nothing and are never
+# used in production, where they come from the environment
+config :fides, Fides.Platform.Vault,
+  keys: [{"V1", :crypto.hash(:sha256, "fides test encryption key")}]
+
+config :fides, Fides.Platform.BlindIndex, key: :crypto.hash(:sha256, "fides test blind index key")

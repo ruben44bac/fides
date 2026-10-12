@@ -80,3 +80,11 @@ config :phoenix_live_view,
 
 # Disable swoosh api client as it is only required for production adapters.
 config :swoosh, :api_client, false
+
+# Development keys, derived from fixed phrases: they protect nothing and are never
+# used in production, where they come from the environment
+config :fides, Fides.Platform.Vault,
+  keys: [{"V1", :crypto.hash(:sha256, "fides development encryption key")}]
+
+config :fides, Fides.Platform.BlindIndex,
+  key: :crypto.hash(:sha256, "fides development blind index key")
