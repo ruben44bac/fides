@@ -29,6 +29,7 @@ defmodule FidesWeb do
       Fides.Notifications,
       Fides.Orchestration,
       Fides.Audit,
+      Fides.AI,
       Phoenix,
       Phoenix.LiveView,
       Phoenix.Component,
