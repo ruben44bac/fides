@@ -38,3 +38,8 @@ npm-debug.log
 /docs
 # Dialyzer PLTs
 /priv/plts/
+
+# The mocks app is a Mix project of its own
+/mocks/_build/
+/mocks/deps/
+/mocks/erl_crash.dump
