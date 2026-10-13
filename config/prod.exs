@@ -14,9 +14,11 @@ config :fides, FidesWeb.Endpoint,
   force_ssl: [
     rewrite_on: [:x_forwarded_proto],
     exclude: [
-      # Health checks reach the node over plain HTTP
+      # Health checks reach the node over plain HTTP, and so do the hosts the runtime
+      # names, such as the service name the mocks call inside compose or a cluster
       paths: ["/health"],
-      hosts: ["localhost", "127.0.0.1"]
+      hosts: ["localhost", "127.0.0.1"],
+      conn: {FidesWeb.PlainHttp, :allowed?, []}
     ]
   ]
 
