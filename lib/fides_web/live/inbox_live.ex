@@ -181,17 +181,19 @@ defmodule FidesWeb.InboxLive do
                 <tr
                   :for={{id, application} <- @streams.applications}
                   id={id}
-                  class="transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                  class="cursor-pointer transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                  phx-click={JS.navigate(~p"/backoffice/applications/#{application.id}")}
                 >
                   <td class="px-5 py-3">
-                    <span class="font-mono text-xs text-zinc-700 dark:text-zinc-300">{Format.short_id(
-                      application.id
-                    )}</span>
+                    <.link
+                      navigate={~p"/backoffice/applications/#{application.id}"}
+                      class="font-mono text-xs font-medium text-orange-700 hover:underline dark:text-orange-300"
+                    >
+                      {Format.short_id(application.id)}
+                    </.link>
                   </td>
                   <td class="px-5 py-3">
-                    <span class="inline-flex items-center rounded-md bg-zinc-100 px-1.5 py-0.5 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
-                      {application.country_code}
-                    </span>
+                    <.tag>{application.country_code}</.tag>
                   </td>
                   <td class="px-5 py-3"><.state_badge state={application.state} /></td>
                   <td class="px-5 py-3 text-right font-medium tabular-nums">

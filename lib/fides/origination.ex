@@ -74,6 +74,20 @@ defmodule Fides.Origination do
     Ash.read(query, Keyword.put(opts, :page, page))
   end
 
+  @doc "The revisions of an application's terms, from the first."
+  @spec revisions(String.t(), Ecto.UUID.t(), term()) :: {:ok, [struct()]} | {:error, term()}
+  def revisions(country, application_id, actor) do
+    require Ash.Query
+
+    Fides.Origination.ApplicationRevision
+    |> Ash.Query.filter(application_id == ^application_id)
+    |> Ash.Query.sort(number: :asc)
+    |> Ash.read(tenant: country, actor: actor)
+  end
+
+  @doc "The states `actor` may move an application to right now, with a transition."
+  defdelegate available_moves(application, actor), to: Fides.Origination.Moves, as: :available
+
   @doc "Every state an application can be in, in some country."
   defdelegate states(), to: Fides.Origination.Lifecycle
 

@@ -50,6 +50,38 @@ defmodule Fides.Risk.Decide do
     |> Ash.read_one(opts)
   end
 
+  @doc "The decisions on an application, newest first."
+  @spec list(String.t(), Ecto.UUID.t(), term()) :: {:ok, [DecisionRecord.t()]} | {:error, term()}
+  def list(country, application_id, actor) do
+    DecisionRecord
+    |> Ash.Query.filter(application_id == ^application_id)
+    |> Ash.Query.sort(inserted_at: :desc)
+    |> Ash.read(tenant: country, actor: actor)
+  end
+
+  @doc "The names of the rules whose outcome or reason codes differ between two decisions."
+  @spec changed_rules(DecisionRecord.t(), DecisionRecord.t() | nil) :: [String.t()]
+  def changed_rules(_decision, nil), do: []
+
+  def changed_rules(decision, previous) do
+    before = Map.new(previous.rule_results, &{rule_name(&1), verdict(&1)})
+
+    for result <- decision.rule_results, Map.get(before, rule_name(result)) != verdict(result) do
+      rule_name(result)
+    end
+  end
+
+  defp rule_name(result), do: result |> field(:rule) |> to_string()
+
+  defp verdict(result) do
+    codes = result |> field(:reason_codes) |> Enum.map(&to_string/1) |> Enum.sort()
+    {to_string(field(result, :outcome)), codes}
+  end
+
+  # Results come back from the database with string keys and values, and from the
+  # engine with atoms
+  defp field(result, key), do: Map.get(result, key) || Map.get(result, Atom.to_string(key))
+
   defp version_in_force(opts) do
     case Fides.Risk.policy_in_force(opts) do
       {:ok, nil} -> {:error, :no_policy}

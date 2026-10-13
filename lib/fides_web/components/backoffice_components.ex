@@ -164,14 +164,106 @@ defmodule FidesWeb.BackofficeComponents do
     """
   end
 
-  @doc "A labelled input or select of a form."
+  @doc "The title of a panel, what it holds, and what can be done with it."
+  attr :title, :string, required: true
+  attr :subtitle, :string, default: nil
+  slot :actions
+
+  def panel_header(assigns) do
+    ~H"""
+    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 px-5 py-4 dark:border-zinc-800">
+      <div>
+        <h2 class="text-sm font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+          {@title}
+        </h2>
+        <p :if={@subtitle} class="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">{@subtitle}</p>
+      </div>
+      <div :if={@actions != []} class="flex flex-wrap items-center gap-2">
+        {render_slot(@actions)}
+      </div>
+    </div>
+    """
+  end
+
+  @doc "A labelled value, in a `<dl>`."
+  attr :label, :string, required: true
+  attr :rest, :global
+  slot :inner_block, required: true
+
+  def kv(assigns) do
+    ~H"""
+    <div {@rest}>
+      <dt class="text-xs text-zinc-500 dark:text-zinc-400">{@label}</dt>
+      <dd class="mt-1 text-sm font-medium">{render_slot(@inner_block)}</dd>
+    </div>
+    """
+  end
+
+  @doc "A small label: a country, a reason code, an outcome. The tone says how it went."
+  attr :tone, :string, default: "zinc", values: ~w(zinc emerald amber rose sky violet)
+  attr :class, :any, default: nil
+  attr :rest, :global
+  slot :inner_block, required: true
+
+  def tag(assigns) do
+    ~H"""
+    <span
+      class={[
+        "inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-medium",
+        tone_classes(@tone),
+        @class
+      ]}
+      {@rest}
+    >
+      {render_slot(@inner_block)}
+    </span>
+    """
+  end
+
+  defp tone_classes("zinc"), do: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+
+  defp tone_classes("emerald"),
+    do: "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"
+
+  defp tone_classes("amber"),
+    do: "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300"
+
+  defp tone_classes("rose"), do: "bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300"
+  defp tone_classes("sky"), do: "bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300"
+
+  defp tone_classes("violet"),
+    do: "bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300"
+
+  @doc "A labelled input, textarea or select of a form."
   attr :field, Phoenix.HTML.FormField, required: true
   attr :label, :string, required: true
-  attr :type, :string, default: "text", values: ~w(text email password select)
+  attr :type, :string, default: "text", values: ~w(text email password select textarea)
   attr :options, :list, default: []
   attr :prompt, :string, default: nil
   attr :class, :any, default: nil
-  attr :rest, :global, include: ~w(autocomplete inputmode placeholder required disabled)
+  attr :rest, :global, include: ~w(autocomplete inputmode placeholder required disabled rows)
+
+  def field(%{type: "textarea"} = assigns) do
+    assigns = assign(assigns, :errors, Enum.map(assigns.field.errors, &translate_error/1))
+
+    ~H"""
+    <label class={["block", @class]}>
+      <span class="mb-1.5 block text-xs font-medium text-zinc-600 dark:text-zinc-400">{@label}</span>
+      <textarea
+        id={@field.id}
+        name={@field.name}
+        class={[
+          "w-full rounded-lg border bg-white px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-zinc-400",
+          "focus:outline-none focus:ring-2 focus:ring-orange-500/30 dark:bg-zinc-900 dark:placeholder:text-zinc-500",
+          @errors == [] && "border-zinc-300 focus:border-orange-500 dark:border-zinc-700",
+          @errors != [] && "border-rose-400 focus:border-rose-500"
+        ]}
+        {@rest}
+      >{Phoenix.HTML.Form.normalize_value("textarea", @field.value)}</textarea>
+      <.field_errors errors={@errors} />
+    </label>
+    """
+  end
 
   def field(%{type: "select"} = assigns) do
     assigns = assign(assigns, :errors, Enum.map(assigns.field.errors, &translate_error/1))
@@ -241,8 +333,11 @@ defmodule FidesWeb.BackofficeComponents do
     """
   end
 
-  @doc "A button, or a link that looks like one: the main action of a screen, or a quiet one."
-  attr :variant, :string, default: "quiet", values: ~w(primary quiet)
+  @doc """
+  A button, or a link that looks like one: the main action of a screen, a quiet one,
+  or one that does something hard to take back.
+  """
+  attr :variant, :string, default: "quiet", values: ~w(primary quiet danger)
   attr :class, :any, default: nil
   attr :rest, :global, include: ~w(href navigate patch method type disabled phx-disable-with form)
   slot :inner_block, required: true
@@ -253,6 +348,7 @@ defmodule FidesWeb.BackofficeComponents do
         "inline-flex h-10 items-center justify-center gap-2 rounded-lg px-4 text-sm font-medium shadow-sm transition",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40 active:translate-y-px disabled:pointer-events-none disabled:opacity-60",
         assigns.variant == "primary" && "bg-orange-600 text-white hover:bg-orange-500",
+        assigns.variant == "danger" && "bg-rose-600 text-white hover:bg-rose-500",
         assigns.variant == "quiet" &&
           "border border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800",
         assigns.class
