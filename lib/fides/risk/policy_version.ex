@@ -42,6 +42,36 @@ defmodule Fides.Risk.PolicyVersion do
 
     # Staff belong to another context, so the references are plain columns
     custom_statements do
+      statement :reevaluation_function do
+        up """
+        CREATE FUNCTION policy_versions_reevaluation() RETURNS trigger LANGUAGE plpgsql AS $$
+        BEGIN
+          INSERT INTO oban_jobs (queue, worker, args)
+          VALUES ('reevaluation', 'Fides.Orchestration.Reevaluation', jsonb_build_object(
+            'country_code', NEW.country_code,
+            'policy_version_id', NEW.id
+          ));
+          RETURN NULL;
+        END
+        $$
+        """
+
+        down "DROP FUNCTION policy_versions_reevaluation()"
+      end
+
+      # Putting a version in force enqueues the reevaluation of the applications waiting
+      # for review under an older one
+      statement :reevaluation_trigger do
+        up """
+        CREATE TRIGGER policy_versions_reevaluation
+          AFTER UPDATE OF status ON policy_versions
+          FOR EACH ROW WHEN (NEW.status = 'published' AND OLD.status = 'draft')
+          EXECUTE FUNCTION policy_versions_reevaluation()
+        """
+
+        down "DROP TRIGGER policy_versions_reevaluation ON policy_versions"
+      end
+
       statement :staff_foreign_keys do
         up """
         ALTER TABLE policy_versions

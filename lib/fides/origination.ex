@@ -76,6 +76,23 @@ defmodule Fides.Origination do
     end
   end
 
+  @doc """
+  The applications of a country waiting for review that were not decided under
+  `policy_version_id`: the ones a new version in force sends back to evaluation.
+  """
+  @spec waiting_under_another_version(String.t(), Ecto.UUID.t(), term()) ::
+          {:ok, [struct()]} | {:error, term()}
+  def waiting_under_another_version(country, policy_version_id, actor) do
+    require Ash.Query
+
+    Fides.Origination.CreditApplication
+    |> Ash.Query.filter(
+      state == :in_review and
+        (is_nil(policy_version_id) or policy_version_id != ^policy_version_id)
+    )
+    |> Ash.read(tenant: country, actor: actor)
+  end
+
   @doc "Revision `number` of an application's terms."
   @spec revision(String.t(), Ecto.UUID.t(), pos_integer(), term()) ::
           {:ok, struct() | nil} | {:error, term()}

@@ -15,7 +15,8 @@ config :fides, Fides.Banking.Client, receive_timeout: 5_000
 config :fides, Oban,
   engine: Oban.Engines.Basic,
   notifier: Oban.Notifiers.Postgres,
-  # The orchestrator's steps, a queue for each agent, and one per bank provider
+  # The orchestrator's steps, a queue for each agent, one per bank provider, and one
+  # for the reevaluations a new policy version triggers
   queues: [
     default: 10,
     orchestration: 10,
@@ -26,7 +27,8 @@ config :fides, Oban,
     banking_mx: 2,
     banking_co: 2,
     banking_br: 2,
-    risk: 5
+    risk: 5,
+    reevaluation: 1
   ],
   lifeline: [rescue_after: {2, :hours}],
   pruner: [max_age: {1, :day}],
