@@ -59,6 +59,14 @@ defmodule Fides.Notifications.WebhookDelivery do
       change atomic_update(:attempts, expr(attempts + 1))
       change set_attribute(:attempted_at, &DateTime.utc_now/0)
     end
+
+    update :resend do
+      description "Puts a failed delivery back to pending, for the console to send it again."
+      accept []
+      require_atomic? false
+      change filter(expr(state == :failed))
+      change set_attribute(:state, :pending)
+    end
   end
 
   policies do
@@ -67,6 +75,12 @@ defmodule Fides.Notifications.WebhookDelivery do
       authorize_if {Agent, names: [:notifier]}
       authorize_if {GlobalRole, roles: [:admin, :auditor]}
       authorize_if {ScopedRole, roles: [:analyst, :risk_manager]}
+    end
+
+    # Whoever works the console sends a failed delivery again
+    policy action(:resend) do
+      authorize_if {GlobalRole, roles: [:admin]}
+      authorize_if {ScopedRole, roles: [:analyst]}
     end
 
     policy action([:announce, :attempted]) do

@@ -33,7 +33,7 @@ defmodule FidesWeb.Layouts do
 
   attr :nav, :atom,
     default: nil,
-    doc: "the menu item of the screen: :inbox, :policies or :settings"
+    doc: "the menu item of the screen: :inbox, :policies, :console or :settings"
 
   slot :inner_block, required: true
 

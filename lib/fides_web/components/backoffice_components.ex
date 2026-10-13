@@ -62,6 +62,12 @@ defmodule FidesWeb.BackofficeComponents do
           current={@nav == :policies}
         />
         <.sidebar_item
+          navigate="/backoffice/console"
+          icon="hero-command-line"
+          label="Console"
+          current={@nav == :console}
+        />
+        <.sidebar_item
           navigate="/backoffice/settings"
           icon="hero-cog-6-tooth"
           label="Settings"
