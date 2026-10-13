@@ -3,17 +3,17 @@
 # the secrets and the first deploy of the database. Running it again is safe:
 # it skips what exists and never replaces a secret.
 #
-#   deploy/fly/bootstrap.sh                        # region qro, organization personal
+#   deploy/fly/bootstrap.sh                        # region dfw, organization personal
 #   FLY_REGION=mad FLY_ORG=acme deploy/fly/bootstrap.sh
 #
 # Needs flyctl signed in and openssl. The region must match primary_region in
-# fly.toml and db.fly.toml.
+# fly.toml, db.fly.toml and mocks.fly.toml.
 set -euo pipefail
 
 cd "$(dirname "$0")"
 
 org="${FLY_ORG:-personal}"
-region="${FLY_REGION:-qro}"
+region="${FLY_REGION:-dfw}"
 app="fides-demo"
 db_app="fides-demo-db"
 mocks_app="fides-demo-mocks"

@@ -2,7 +2,7 @@
 # on a volume, reachable only inside the private network as
 # fides-demo-db.internal. POSTGRES_PASSWORD is a secret set by bootstrap.sh.
 app = "fides-demo-db"
-primary_region = "qro"
+primary_region = "dfw"
 
 [build]
   image = "pgvector/pgvector:pg18"

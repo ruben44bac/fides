@@ -21,9 +21,9 @@ the time, so queued jobs run and the first request is never slow.
 
 1. Install flyctl and sign in: `fly auth login`.
 2. Run `deploy/fly/bootstrap.sh`. It creates the three apps, the volume and the
-   secrets, and deploys the database. `FLY_REGION` (default `qro`) and `FLY_ORG`
-   (default `personal`) override the defaults; the region must match
-   `primary_region` in both TOML files.
+   secrets, and deploys the database. `FLY_REGION` (default `dfw`, Dallas, the
+   closest region to Mexico) and `FLY_ORG` (default `personal`) override the
+   defaults; the region must match `primary_region` in the three TOML files.
 3. Create a deploy token and save it as the `FLY_API_TOKEN` secret of the GitHub
    repository: `fly tokens create deploy --app fides-demo --expiry 8760h`.
 4. Optionally create the `demo` environment in the repository settings, so the
