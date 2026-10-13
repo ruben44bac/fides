@@ -39,9 +39,7 @@ defmodule Fides.Banking.Adapters.MxWebhook do
   The event's identity: its id, its sequence number and the request it answers. The
   webhook endpoint uses it to drop repeated events and reorder late ones.
   """
-  @spec envelope(binary()) ::
-          {:ok, %{event_id: String.t(), sequence: non_neg_integer(), request_id: String.t()}}
-          | {:error, {:malformed, :body}}
+  @impl true
   def envelope(body) do
     case Jason.decode(body) do
       {:ok, %{"event_id" => event_id, "sequence" => sequence, "request_id" => request_id}}

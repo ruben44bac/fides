@@ -21,7 +21,7 @@ defmodule Fides.Orchestration.Agents.Intake do
   def version, do: 1
 
   @impl true
-  def queue, do: :intake
+  def queue(_assignment), do: :intake
 
   @impl true
   def run(assignment) do

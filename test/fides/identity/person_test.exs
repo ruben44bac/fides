@@ -177,6 +177,16 @@ defmodule Fides.Identity.PersonTest do
                Identity.check_holder("ES", spanish.id, intake)
     end
 
+    test "Banking reads the document to ask the provider, and nothing more" do
+      {:ok, mexican} = resolve(Fides.Factory.mexican_holder(), "MX")
+
+      assert {:ok, %{document_type: "CURP", document: "HEGG560427MVZRRL04"}} =
+               Identity.holder_document("MX", mexican.id, AgentActor.new(:banking))
+
+      assert {:error, %Ash.Error.Invalid{errors: [%Ash.Error.Query.NotFound{}]}} =
+               Identity.holder_document("MX", mexican.id, AgentActor.new(:risk))
+    end
+
     test "is only for Intake: for any other agent, the holder does not exist" do
       {:ok, spanish} = resolve(@holder)
 

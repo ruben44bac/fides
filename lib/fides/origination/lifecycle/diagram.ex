@@ -96,7 +96,7 @@ defmodule Fides.Origination.Lifecycle.Diagram do
   defp effect({:transition, to}), do: "The orchestrator moves it to `#{to}`"
   defp effect({:agent, name}), do: "Agent `#{name}`"
   defp effect({:timeout, name}), do: "Timeout `#{name}`"
-  defp effect({:retry, name}), do: "Scheduled retry of `#{name}`"
+  defp effect({:retry, state}), do: "Scheduled retry, back to `#{state}`"
   defp effect({:queue, name}), do: "Enters the `#{name}` queue"
   defp effect({:capability, name}), do: "AI capability `#{name}`"
   defp effect({:webhook, event}), do: "Signed webhook `#{event}`"

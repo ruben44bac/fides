@@ -10,7 +10,9 @@ defmodule Fides.Orchestration.Agent do
     * `{:retry, reason}` asks to run again later, for a failure that may pass.
     * `{:escalate, reason}` hands the case to a person.
 
-  Each agent runs in its own queue, with its own identity.
+  Each agent runs in its own queue, with its own identity. When an agent asks to
+  retry on its last attempt, it proposes what `exhausted/2` gives instead; without
+  it, the case escalates.
   """
 
   alias Fides.Orchestration.Assignment
@@ -26,8 +28,13 @@ defmodule Fides.Orchestration.Agent do
   @doc "The version of the agent's logic, recorded with each of its runs."
   @callback version() :: pos_integer()
 
-  @doc "The Oban queue the agent runs in."
-  @callback queue() :: atom()
+  @doc "The Oban queue the agent runs in for an assignment, such as one per provider."
+  @callback queue(Assignment.t()) :: atom()
 
   @callback run(Assignment.t()) :: proposal()
+
+  @doc "What the agent proposes when its last attempt asked to retry, with the reason."
+  @callback exhausted(Assignment.t(), reason :: String.t()) :: proposal()
+
+  @optional_callbacks exhausted: 2
 end

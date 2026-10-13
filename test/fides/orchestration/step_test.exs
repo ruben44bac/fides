@@ -96,9 +96,10 @@ defmodule Fides.Orchestration.StepTest do
       |> submit("ES", ctx.analyst)
       |> move!(:validating)
       |> move!(:awaiting_bank_data)
+      |> move!(:evaluating)
 
     assert :ok = step(application)
     refute_enqueued worker: AgentJob
-    assert current(application).state == :awaiting_bank_data
+    assert current(application).state == :evaluating
   end
 end

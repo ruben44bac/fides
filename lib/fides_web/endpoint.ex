@@ -57,6 +57,7 @@ defmodule FidesWeb.Endpoint do
   plug Plug.Parsers,
     parsers: [:urlencoded, :multipart, :json, AshJsonApi.Plug.Parser],
     pass: ["*/*"],
+    body_reader: {FidesWeb.CacheBodyReader, :read_body, []},
     json_decoder: Phoenix.json_library()
 
   plug Plug.MethodOverride

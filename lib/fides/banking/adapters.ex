@@ -28,6 +28,30 @@ defmodule Fides.Banking.Adapters do
   @spec keys() :: [String.t()]
   def keys, do: Enum.map(@adapters, & &1.key())
 
+  @doc "The identity of an answer that arrives later, as its adapter reads it."
+  @spec envelope(String.t(), binary()) ::
+          {:ok, %{event_id: String.t(), sequence: non_neg_integer(), request_id: String.t()}}
+          | {:error, :unknown_adapter | {:malformed, :body}}
+  def envelope(key, body) when is_binary(body) do
+    case Enum.find(@adapters, &(&1.key() == key)) do
+      nil ->
+        {:error, :unknown_adapter}
+
+      _adapter when byte_size(body) > @max_body_bytes ->
+        {:error, {:malformed, :body}}
+
+      adapter ->
+        read_envelope(adapter, body)
+    end
+  end
+
+  # Only the adapters of providers that answer later carry an envelope
+  defp read_envelope(adapter, body) do
+    if function_exported?(adapter, :envelope, 1),
+      do: adapter.envelope(body),
+      else: {:error, {:malformed, :body}}
+  end
+
   @doc "Translates a provider's answer into a profile."
   @spec parse(String.t(), binary()) ::
           {:ok, Profile.t()} | {:error, :unknown_adapter | {:malformed, atom()}}

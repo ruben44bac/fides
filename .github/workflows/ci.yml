@@ -97,6 +97,34 @@ jobs:
       # Fails below the coverage threshold set in mix.exs, and on any warning.
       - run: mix test --cover --warnings-as-errors
 
+  mocks:
+    name: Mocks app
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mocks
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{ env.OTP_VERSION }}
+          elixir-version: ${{ env.ELIXIR_VERSION }}
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            mocks/deps
+            mocks/_build
+          key: mix-mocks-${{ runner.os }}-${{ hashFiles('mocks/mix.lock') }}
+          restore-keys: mix-mocks-${{ runner.os }}-
+
+      - run: mix deps.get
+      - run: mix compile --warnings-as-errors
+      - run: mix format --check-formatted
+      - run: mix test --warnings-as-errors
+
   dialyzer:
     name: Dialyzer
     runs-on: ubuntu-latest
