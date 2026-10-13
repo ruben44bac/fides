@@ -164,6 +164,76 @@ defmodule FidesWeb.BackofficeComponents do
     """
   end
 
+  @doc "The title of a panel, what it holds, and what can be done with it."
+  attr :title, :string, required: true
+  attr :subtitle, :string, default: nil
+  slot :actions
+
+  def panel_header(assigns) do
+    ~H"""
+    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 px-5 py-4 dark:border-zinc-800">
+      <div>
+        <h2 class="text-sm font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+          {@title}
+        </h2>
+        <p :if={@subtitle} class="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">{@subtitle}</p>
+      </div>
+      <div :if={@actions != []} class="flex flex-wrap items-center gap-2">
+        {render_slot(@actions)}
+      </div>
+    </div>
+    """
+  end
+
+  @doc "A labelled value, in a `<dl>`."
+  attr :label, :string, required: true
+  attr :rest, :global
+  slot :inner_block, required: true
+
+  def kv(assigns) do
+    ~H"""
+    <div {@rest}>
+      <dt class="text-xs text-zinc-500 dark:text-zinc-400">{@label}</dt>
+      <dd class="mt-1 text-sm font-medium">{render_slot(@inner_block)}</dd>
+    </div>
+    """
+  end
+
+  @doc "A small label: a country, a reason code, an outcome. The tone says how it went."
+  attr :tone, :string, default: "zinc", values: ~w(zinc emerald amber rose sky violet)
+  attr :class, :any, default: nil
+  attr :rest, :global
+  slot :inner_block, required: true
+
+  def tag(assigns) do
+    ~H"""
+    <span
+      class={[
+        "inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-medium",
+        tone_classes(@tone),
+        @class
+      ]}
+      {@rest}
+    >
+      {render_slot(@inner_block)}
+    </span>
+    """
+  end
+
+  defp tone_classes("zinc"), do: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+
+  defp tone_classes("emerald"),
+    do: "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"
+
+  defp tone_classes("amber"),
+    do: "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300"
+
+  defp tone_classes("rose"), do: "bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300"
+  defp tone_classes("sky"), do: "bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300"
+
+  defp tone_classes("violet"),
+    do: "bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300"
+
   @doc "A labelled input or select of a form."
   attr :field, Phoenix.HTML.FormField, required: true
   attr :label, :string, required: true
