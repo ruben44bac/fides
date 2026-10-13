@@ -33,6 +33,10 @@ RUN mix local.hex --force \
 
 ENV MIX_ENV="prod"
 
+# The commit the evidence records in every audited transaction, read at compile time
+ARG FIDES_CODE_SHA=unknown
+ENV FIDES_CODE_SHA=${FIDES_CODE_SHA}
+
 # Dependencies first, so a change in the code alone reuses this layer
 COPY mix.exs mix.lock ./
 RUN mix deps.get --only $MIX_ENV
@@ -65,7 +69,7 @@ RUN mix release
 FROM ${RUNNER_IMAGE} AS final
 
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends libstdc++6 libsctp1 openssl libncurses6 locales ca-certificates \
+  && apt-get install -y --no-install-recommends libstdc++6 libsctp1 openssl libncurses6 locales ca-certificates curl \
   && rm -rf /var/lib/apt/lists/*
 
 RUN sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen \

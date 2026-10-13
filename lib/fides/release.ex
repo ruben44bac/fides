@@ -14,7 +14,8 @@ defmodule Fides.Release do
       Fides.Origination,
       Fides.Accounts,
       Fides.Risk,
-      Fides.Notifications
+      Fides.Notifications,
+      Fides.Demo
     ]
 
   alias Fides.Accounts
@@ -27,12 +28,18 @@ defmodule Fides.Release do
 
   @app :fides
 
-  @doc "Runs every pending migration of every repo."
+  @doc "Creates each repo's database if it is missing, then runs every pending migration."
   @spec migrate() :: :ok
   def migrate do
     load_app()
 
     for repo <- repos() do
+      case repo.__adapter__().storage_up(repo.config()) do
+        :ok -> :ok
+        {:error, :already_up} -> :ok
+        {:error, reason} -> raise "could not create the database: #{inspect(reason)}"
+      end
+
       {:ok, _, _} = Ecto.Migrator.with_repo(repo, &Ecto.Migrator.run(&1, :up, all: true))
     end
 
@@ -76,6 +83,31 @@ defmodule Fides.Release do
   def setup do
     migrate()
     seed()
+  end
+
+  @doc "Prints a demo staff user's current code, for `make code` against the image."
+  @spec code(String.t()) :: :ok
+  def code(handle) do
+    load_app()
+
+    if Accounts.Demo.user(handle),
+      do: IO.puts(Accounts.Demo.totp_code(handle)),
+      else:
+        raise(
+          "no demo staff user #{inspect(handle)}: " <> Enum.join(Accounts.Demo.handles(), ", ")
+        )
+  end
+
+  @doc "Runs the three scripted scenarios against this node, for `make demo` against the image."
+  @spec demo(String.t()) :: :ok
+  def demo(url \\ "http://localhost:4000") do
+    load_app()
+    {:ok, _apps} = Application.ensure_all_started(:req)
+
+    case Fides.Demo.run(url: url) do
+      :ok -> :ok
+      {:error, reason} -> raise reason
+    end
   end
 
   defp repos, do: Application.fetch_env!(@app, :ecto_repos)

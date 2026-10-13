@@ -46,3 +46,6 @@ npm-debug.log
 
 # The local environment, copied from .env.example
 /.env
+
+# The development keys make run generates for compose
+/deploy/compose.env
