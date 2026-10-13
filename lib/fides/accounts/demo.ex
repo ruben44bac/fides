@@ -59,4 +59,8 @@ defmodule Fides.Accounts.Demo do
   @doc "The current TOTP code of the demo user `handle`."
   @spec totp_code(String.t()) :: String.t()
   def totp_code(handle), do: Totp.code(totp_secret(handle))
+
+  @doc "How many seconds the current codes stay current."
+  @spec seconds_left() :: pos_integer()
+  def seconds_left, do: Totp.seconds_left()
 end
