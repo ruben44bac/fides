@@ -4,18 +4,62 @@ defmodule FidesWeb.ApplicationLive do
   each decision with the rules that changed since the one before, what the agents
   found and did, and the story the evidence tells. The screen follows the application
   as it moves. An application outside the staff user's countries does not exist here.
+
+  From here the staff user makes the moves the life cycle allows them right now, each
+  with a reason the evidence keeps. A move on a version that is no longer current does
+  not happen: the screen says so and offers to read the application again, keeping
+  what was written.
   """
 
   use FidesWeb, :live_view
 
+  alias Fides.Origination.TransitionNotAllowed
   alias Fides.Platform.ChangeListener
   alias FidesWeb.Format
 
   @impl true
-  def mount(_params, _session, socket), do: {:ok, assign(socket, subscribed: nil)}
+  def mount(_params, _session, socket),
+    do: {:ok, assign(socket, subscribed: nil, move: nil, move_form: nil, conflict?: false)}
 
   @impl true
   def handle_params(%{"id" => id}, _uri, socket), do: {:noreply, load(socket, id)}
+
+  # Choosing a move opens the form for its reason; choosing again changes the move and
+  # keeps the reason, and choosing none closes it
+  @impl true
+  def handle_event("choose", params, socket) do
+    case Enum.find(socket.assigns.moves, &(Atom.to_string(&1) == params["to"])) do
+      nil -> {:noreply, assign(socket, move: nil, move_form: nil, conflict?: false)}
+      to -> {:noreply, assign(socket, move: to, move_form: move_form(reason(socket)))}
+    end
+  end
+
+  def handle_event("draft", %{"move" => %{"reason" => reason}}, socket),
+    do: {:noreply, assign(socket, :move_form, move_form(reason))}
+
+  def handle_event("move", %{"move" => %{"reason" => reason}}, socket) do
+    %{application: application, current_scope: scope, move: to} = socket.assigns
+
+    application
+    |> Fides.Origination.transition_application(to, application.lock_version, %{reason: reason},
+      tenant: application.country_code,
+      actor: scope.user
+    )
+    |> case do
+      {:ok, _moved} ->
+        {:noreply,
+         socket
+         |> assign(move: nil, move_form: nil, conflict?: false)
+         |> put_flash(:info, "Moved to #{Format.label(to)}.")
+         |> load(application.id)}
+
+      {:error, error} ->
+        {:noreply, refused(socket, error, reason)}
+    end
+  end
+
+  def handle_event("reload", _params, socket),
+    do: {:noreply, socket |> assign(:conflict?, false) |> load(socket.assigns.application.id)}
 
   # The application itself changed: everything is read again
   @impl true
@@ -36,9 +80,11 @@ defmodule FidesWeb.ApplicationLive do
         |> subscribe(application.country_code)
         |> assign(
           application: application,
+          moves: Fides.Origination.available_moves(application, scope.user),
           page_title: "Application #{Format.short_id(application.id)}"
         )
         |> assign(evidence(application, scope.user))
+        |> reconcile_move()
 
       _missing ->
         socket
@@ -92,6 +138,58 @@ defmodule FidesWeb.ApplicationLive do
 
   defp names(records, field), do: Map.new(records, &{&1.id, Map.fetch!(&1, field)})
 
+  # A move being prepared that the application no longer allows is said so, and what
+  # was written stays
+  defp reconcile_move(%{assigns: %{move: nil}} = socket), do: socket
+
+  defp reconcile_move(%{assigns: %{move: move, moves: moves, application: application}} = socket) do
+    if move in moves do
+      socket
+    else
+      gone =
+        {"is no longer possible: the application is now #{Format.label(application.state)}", []}
+
+      assign(socket, :move_form, move_form(reason(socket), to: gone))
+    end
+  end
+
+  defp reason(%{assigns: %{move_form: %{params: %{"reason" => reason}}}}), do: reason
+  defp reason(_socket), do: ""
+
+  defp move_form(reason, errors \\ []),
+    do: to_form(%{"reason" => reason}, as: :move, errors: errors)
+
+  # A move refused because the application changed offers to read it again; one refused
+  # for another reason shows it next to what caused it
+  defp refused(socket, %Ash.Error.Forbidden{}, reason),
+    do: assign(socket, :move_form, move_form(reason, to: {"is not a move you may make", []}))
+
+  defp refused(socket, %{errors: errors}, reason) when is_list(errors) do
+    if Enum.any?(errors, &match?(%Ash.Error.Changes.StaleRecord{}, &1)) do
+      assign(socket, conflict?: true, move_form: move_form(reason))
+    else
+      assign(socket, :move_form, move_form(reason, Enum.map(errors, &field_error/1)))
+    end
+  end
+
+  defp refused(socket, error, reason),
+    do: assign(socket, :move_form, move_form(reason, to: {message(error), []}))
+
+  defp field_error(%Ash.Error.Changes.InvalidArgument{
+         field: field,
+         message: message,
+         vars: vars
+       }),
+       do: {field, {message, vars || []}}
+
+  defp field_error(%TransitionNotAllowed{} = error),
+    do: {:to, {TransitionNotAllowed.summary(error), []}}
+
+  defp field_error(error), do: {:to, {message(error), []}}
+
+  defp message(error) when is_exception(error), do: Exception.message(error)
+  defp message(error), do: inspect(error)
+
   @impl true
   def render(assigns) do
     ~H"""
@@ -127,6 +225,13 @@ defmodule FidesWeb.ApplicationLive do
             <.agents facts={@facts} runs={@runs} />
           </div>
           <div class="space-y-6">
+            <.moves
+              application={@application}
+              moves={@moves}
+              move={@move}
+              form={@move_form}
+              conflict?={@conflict?}
+            />
             <.timeline entries={@timeline} currency={@application.currency} />
           </div>
         </div>
@@ -483,6 +588,89 @@ defmodule FidesWeb.ApplicationLive do
     """
   end
 
+  attr :application, :map, required: true
+  attr :moves, :list, required: true
+  attr :move, :atom, default: nil
+  attr :form, :any, default: nil
+  attr :conflict?, :boolean, default: false
+
+  defp moves(assigns) do
+    ~H"""
+    <.panel id="moves">
+      <.panel_header title="Actions" subtitle="What you may do with this application right now." />
+      <div class="space-y-4 px-5 py-4">
+        <p :if={@moves == []} class="text-sm text-zinc-500 dark:text-zinc-400">
+          {why_none(@application)}
+        </p>
+        <div :if={@moves != []} class="flex flex-wrap gap-2">
+          <.action
+            :for={to <- @moves}
+            id={"move-#{to}"}
+            variant={move_variant(to)}
+            phx-click="choose"
+            phx-value-to={to}
+            class={@move == to && "ring-2 ring-orange-500/40 ring-offset-2 dark:ring-offset-zinc-900"}
+          >
+            {move_label(to)}
+          </.action>
+        </div>
+        <.form
+          :if={@move}
+          for={@form}
+          id="move-form"
+          phx-change="draft"
+          phx-submit="move"
+          class="space-y-3 rounded-xl border border-zinc-200 bg-zinc-50/60 p-4 dark:border-zinc-700 dark:bg-zinc-800/40"
+        >
+          <p class="text-sm">
+            Moving to <strong>{Format.label(@move)}</strong>.
+            <span class="text-zinc-500 dark:text-zinc-400">The reason stays in the evidence.</span>
+          </p>
+          <div
+            :if={@conflict?}
+            id="move-conflict"
+            class="rounded-lg bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-500/10 dark:text-amber-200"
+          >
+            The move did not happen: the application changed while you were writing. It is now <strong>{Format.label(@application.state)}</strong>, version {@application.lock_version}.
+            Read it again and confirm if it still applies; what you wrote stays.
+            <div class="mt-2">
+              <.action id="reload-application" phx-click="reload">
+                <.icon name="hero-arrow-path-mini" class="size-4" /> Read it again
+              </.action>
+            </div>
+          </div>
+          <p
+            :for={error <- @form[:to].errors}
+            id="move-error"
+            class="flex items-center gap-1 text-sm text-rose-600 dark:text-rose-400"
+          >
+            <.icon name="hero-exclamation-circle-mini" class="size-4" />
+            This move {translate_error(error)}
+          </p>
+          <.field
+            field={@form[:reason]}
+            type="textarea"
+            label="Reason"
+            rows="3"
+            placeholder="Why, for whoever reads the evidence later"
+          />
+          <div class="flex flex-wrap gap-2">
+            <.action
+              type="submit"
+              variant={move_variant(@move)}
+              disabled={@move not in @moves}
+              phx-disable-with="Moving…"
+            >
+              Confirm: {move_label(@move)}
+            </.action>
+            <.action type="button" phx-click="choose">Back</.action>
+          </div>
+        </.form>
+      </div>
+    </.panel>
+    """
+  end
+
   attr :entries, :list, required: true
   attr :currency, :string, required: true
 
@@ -520,6 +708,26 @@ defmodule FidesWeb.ApplicationLive do
   end
 
   defp policy(policies, id), do: Map.get(policies, id)
+
+  defp move_label(:approved), do: "Approve"
+  defp move_label(:pending_countersign), do: "Approve, for countersign"
+  defp move_label(:rejected), do: "Reject"
+  defp move_label(:info_requested), do: "Request information"
+  defp move_label(:in_review), do: "Return to review"
+  defp move_label(:cancelled), do: "Cancel the application"
+  defp move_label(other), do: "Move to " <> Format.label(other)
+
+  defp move_variant(to) when to in [:approved, :pending_countersign], do: "primary"
+  defp move_variant(to) when to in [:rejected, :cancelled], do: "danger"
+  defp move_variant(_other), do: "quiet"
+
+  defp why_none(%{state: state}) when state in [:approved, :rejected, :cancelled],
+    do: "The application is #{Format.label(state)}, which is final: nothing moves it."
+
+  defp why_none(%{state: state}) do
+    "Nothing for you to do from here right now: #{Format.label(state)} is in the system's " <>
+      "hands, or waits on someone else."
+  end
 
   defp adult(nil), do: "not encoded in the document"
   defp adult(true), do: "yes"
