@@ -24,7 +24,78 @@ defmodule Fides.Identity do
       define :accept_consent, action: :accept
       define :list_consents, action: :read
     end
+
+    resource Fides.Identity.PiiAccessLog do
+      define :record_pii_access, action: :record
+      define :list_pii_accesses, action: :read
+    end
   end
+
+  @personal_fields [:name, :document, :email]
+
+  @doc """
+  Reveals one personal field of a holder to a member of staff, for a reason, and
+  leaves who revealed what of whom, when and why in the access log. The row and the
+  look are one transaction, and the reason is also the reason of the audited
+  transaction: without a reason, nothing is revealed. The name comes back as one
+  string.
+  """
+  @spec reveal(String.t(), Ecto.UUID.t(), :name | :document | :email, String.t() | nil, term()) ::
+          {:ok, %{value: String.t(), access: Fides.Identity.PiiAccessLog.t()}} | {:error, term()}
+  def reveal(country, person_id, field, reason, actor) when field in @personal_fields do
+    look = fn -> look(country, person_id, field, reason, actor) end
+
+    with_audit_reason(reason, fn ->
+      Ash.transact([Fides.Identity.PiiAccessLog, Fides.Identity.Person], look)
+    end)
+  end
+
+  # The row first: a refused row means no look
+  defp look(country, person_id, field, reason, actor) do
+    with {:ok, access} <-
+           record_pii_access(
+             %{subject_type: :person, subject_id: person_id, field: field, reason: reason},
+             tenant: country,
+             actor: actor
+           ),
+         {:ok, person} <-
+           Ash.get(Fides.Identity.Person, person_id,
+             tenant: country,
+             authorize?: false,
+             load: [field]
+           ) do
+      %{value: text(field, Map.fetch!(person, field)), access: access}
+    end
+  end
+
+  @doc "The looks at a holder's personal data, newest first."
+  @spec pii_accesses(String.t(), Ecto.UUID.t(), term()) :: {:ok, [struct()]} | {:error, term()}
+  def pii_accesses(country, person_id, actor) do
+    Fides.Identity.PiiAccessLog
+    |> Ash.Query.filter(subject_type == :person and subject_id == ^person_id)
+    |> Ash.Query.sort(accessed_at: :desc)
+    |> Ash.read(tenant: country, actor: actor)
+  end
+
+  # The access log's reason becomes the reason of the audited transaction, when there
+  # is one to carry it; a missing reason is for the record's validation to refuse
+  defp with_audit_reason(reason, fun) when is_binary(reason) and reason != "" do
+    case Fides.Platform.AuditContext.get() do
+      nil -> fun.()
+      _context -> Fides.Platform.AuditContext.run([reason: reason], fun)
+    end
+  end
+
+  defp with_audit_reason(_reason, fun), do: fun.()
+
+  defp text(:name, name) do
+    [:given_names, :first_surname, :second_surname]
+    |> Enum.map(&(Map.get(name, &1) || Map.get(name, Atom.to_string(&1))))
+    |> Enum.reject(&(&1 in [nil, ""]))
+    |> Enum.join(" ")
+  end
+
+  defp text(_field, value), do: value
 
   @doc """
   The holder of a document in a country, or nil. Found by the document's keyed hash,
