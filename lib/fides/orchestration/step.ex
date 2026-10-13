@@ -14,11 +14,15 @@ defmodule Fides.Orchestration.Step do
 
   use Oban.Worker, queue: :orchestration, max_attempts: 20
 
+  alias Fides.Orchestration
   alias Fides.Orchestration.AgentJob
   alias Fides.Orchestration.Agents
   alias Fides.Orchestration.DelayedMove
   alias Fides.Orchestration.Orchestrator
   alias Fides.Origination
+  alias Fides.Platform.SystemActor
+
+  @actor SystemActor.new(:orchestrator)
 
   @impl Oban.Worker
   def perform(%Oban.Job{args: %{"application_id" => id, "lock_version" => version}}) do
@@ -63,7 +67,31 @@ defmodule Fides.Orchestration.Step do
   defp run({:timeout, _name}, application),
     do: DelayedMove.schedule(application, :provider_error, setting(:callback_timeout, 600))
 
+  defp run({:webhook, event}, application),
+    do: Fides.Notifications.announce(application, event, reason_codes(application), @actor)
+
+  defp run({:notice, template}, application),
+    do: Fides.Notifications.notify(application, template, @actor)
+
   defp run(_not_yet, _application), do: :ok
+
+  # The reason codes of the decision that put the application in its state; a person's
+  # move has none
+  defp reason_codes(application) do
+    case Orchestration.case_facts(application.country_code, application.id, @actor) do
+      {:ok, %{"decision" => %{"outcome" => outcome, "reason_codes" => codes}}}
+      when is_list(codes) ->
+        if decided?(outcome, application.state), do: codes, else: []
+
+      _none ->
+        []
+    end
+  end
+
+  defp decided?("approve", :approved), do: true
+  defp decided?("reject", :rejected), do: true
+  defp decided?("review", :in_review), do: true
+  defp decided?(_outcome, _state), do: false
 
   defp setting(key, default),
     do: :fides |> Application.get_env(Fides.Orchestration, []) |> Keyword.get(key, default)

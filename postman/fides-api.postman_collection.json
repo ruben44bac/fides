@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Fides API",
-    "description": "The staff API for credit applications. Staff sign in with their password and a TOTP\ncode, and send the bearer token on every other request.\n\n## Before you start\n\n1. Migrate and seed the database: `mix ecto.migrate && mix run priv/repo/seeds.exs`.\n   The seeds create the demo staff and put each country's first policy version in force.\n2. Start the simulated bank providers: `cd mocks && mix run --no-halt`, on port 4010.\n3. Start the app with `mix phx.server`. `baseUrl` points to http://localhost:4000.\n\n## Running it\n\nRun the folders in order, one by one or with the Collection Runner. The orchestrator\ntakes each application through validation, the bank data and the risk evaluation on\nits own, so the requests that move an application first wait for it to rest.\n\nEvery request that changes something carries an `Idempotency-Key`, a new one each\ntime unless a request repeats one on purpose. Requests save the ids and versions the\nnext ones use as collection variables.\n\nThe demo users' TOTP codes come from the development seed in `totpSeed`, so no\nauthenticator is needed. A code works once per user: the sign-in requests remember\nwhich they used and, when needed, wait up to 30 seconds for the next one.",
+    "description": "The staff API for credit applications. Staff sign in with their password and a TOTP\ncode, and send the bearer token on every other request.\n\n## Before you start\n\n1. Migrate and seed the database: `mix ecto.migrate && mix run priv/repo/seeds.exs`.\n   The seeds create the demo staff and put each country's first policy version in force.\n2. Start the mocks app, `cd mocks && mix run --no-halt`: the simulated bank providers\n   and the receiver of Fides' webhooks, on port 4010. `mocksUrl` points to it.\n3. Start the app with `mix phx.server`. `baseUrl` points to http://localhost:4000.\n\n## Running it\n\nRun the folders in order, one by one or with the Collection Runner. The orchestrator\ntakes each application through validation, the bank data and the risk evaluation on\nits own, so the requests that move an application first wait for it to rest.\n\nEvery request that changes something carries an `Idempotency-Key`, a new one each\ntime unless a request repeats one on purpose. Requests save the ids and versions the\nnext ones use as collection variables.\n\nThe demo users' TOTP codes come from the development seed in `totpSeed`, so no\nauthenticator is needed. A code works once per user: the sign-in requests remember\nwhich they used and, when needed, wait up to 30 seconds for the next one.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -2006,9 +2006,66 @@
       ]
     },
     {
-      "name": "8 · Docs",
-      "description": "The OpenAPI document of the API, public. Swagger UI shows it at `/api/swaggerui`,\nfor example http://localhost:4000/api/swaggerui.",
+      "name": "8 · Docs and webhooks",
+      "description": "The OpenAPI document of the API, public. Swagger UI shows it at `/api/swaggerui`,\nfor example http://localhost:4000/api/swaggerui.\n\nThe mocks app also plays the system that receives Fides' webhooks: every approval,\nrejection and request for information of the previous folders reached it, signed.\n`mocksUrl` points to it; `/webhooks/page` shows the same list as a page.",
       "item": [
+        {
+          "name": "Webhooks the receiver got",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Deliveries are jobs of their own: give the last one up to 15 seconds to arrive",
+                  "const url = pm.variables.replaceIn(\"{{mocksUrl}}/webhooks\");",
+                  "const expected = pm.collectionVariables.get(\"countersignId\");",
+                  "const deadline = Date.now() + 15000;",
+                  "",
+                  "const wait = () =>",
+                  "  pm.sendRequest({ url, method: \"GET\" }, (error, response) => {",
+                  "    const ids = !error && response.code === 200 ? response.json().map(event => event.application_id) : [];",
+                  "    if (ids.includes(expected) || Date.now() > deadline) return;",
+                  "    setTimeout(wait, 500);",
+                  "  });",
+                  "",
+                  "wait();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const events = pm.response.json();",
+                  "",
+                  "pm.test(\"the receiver got the decisions of this run, without personal data\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const ids = events.map(event => event.application_id);",
+                  "  pm.expect(ids).to.include(pm.collectionVariables.get(\"approveId\"));",
+                  "  pm.expect(ids).to.include(pm.collectionVariables.get(\"countersignId\"));",
+                  "  pm.expect(pm.response.text()).not.to.include(pm.collectionVariables.get(\"reviewDocument\"));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{mocksUrl}}/webhooks"
+          },
+          "response": []
+        },
         {
           "name": "OpenAPI document",
           "event": [
@@ -2109,6 +2166,11 @@
     {
       "key": "baseUrl",
       "value": "http://localhost:4000",
+      "type": "string"
+    },
+    {
+      "key": "mocksUrl",
+      "value": "http://localhost:4010",
       "type": "string"
     },
     {

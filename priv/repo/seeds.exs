@@ -10,4 +10,5 @@ Fides.Origination.Seeds.run()
 if Fides.Accounts.Demo.enabled?() do
   staff = Fides.Accounts.Seeds.run()
   Fides.Risk.Seeds.run(staff["risk_manager_1"], staff["risk_manager_2"])
+  Fides.Notifications.Seeds.run()
 end

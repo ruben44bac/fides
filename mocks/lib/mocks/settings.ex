@@ -12,6 +12,8 @@ defmodule Mocks.Settings do
       malformed (0).
     * `MOCKS_WEBHOOK_DELAY_MS`: how long Mexico's provider waits before delivering (1000).
     * `MOCKS_WEBHOOK_DUPLICATES`: how many extra times each webhook is delivered (0).
+    * `MOCKS_RECEIVER_SECRET`: what Fides signs its webhooks to the receiver with.
+    * `MOCKS_RECEIVER_DOWN`: set to 1 to have the receiver answer 503.
 
   A request can also force one behaviour with the `X-Mock-Scenario` header: `error`,
   `timeout` or `malformed`.
@@ -35,6 +37,13 @@ defmodule Mocks.Settings do
 
   @spec webhook_duplicates() :: non_neg_integer()
   def webhook_duplicates, do: integer("MOCKS_WEBHOOK_DUPLICATES", 0)
+
+  @spec receiver_secret() :: String.t()
+  def receiver_secret,
+    do: System.get_env("MOCKS_RECEIVER_SECRET", "fides development webhook receiver secret")
+
+  @spec receiver_down?() :: boolean()
+  def receiver_down?, do: System.get_env("MOCKS_RECEIVER_DOWN") in ["1", "true"]
 
   @doc "The scenario a call falls into: by the request's header, or by chance at the configured rates."
   @spec scenario(String.t() | nil) :: :ok | :error | :timeout | :malformed

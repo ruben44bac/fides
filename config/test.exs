@@ -67,5 +67,9 @@ config :fides, Fides.Banking.Client,
 
 config :fides, Fides.Banking.Callback, secret: "fides test provider webhook secret"
 
+# Webhook receivers are stubbed in each test
+config :fides, Fides.Notifications.Deliver,
+  req_options: [plug: {Req.Test, Fides.Notifications.Deliver}]
+
 # Delayed moves are due at once
 config :fides, Fides.Orchestration, retry_after: 0, callback_timeout: 0

@@ -6,7 +6,7 @@ defmodule Mocks.Application do
   @impl true
   def start(_type, _args) do
     children =
-      [{Task.Supervisor, name: Mocks.Webhooks}] ++
+      [{Task.Supervisor, name: Mocks.Webhooks}, Mocks.Receiver] ++
         if Application.get_env(:mocks, :start_server?, true),
           do: [{Bandit, plug: Mocks.Router, port: Mocks.Settings.port()}],
           else: []

@@ -48,6 +48,9 @@ defmodule Fides.Origination do
     resource Fides.Origination.ApplicationCommands
   end
 
+  @doc "Every state an application can be in, in some country."
+  defdelegate states(), to: Fides.Origination.Lifecycle
+
   @doc "The target states an actor may move an application to from `state`."
   defdelegate available_transitions(country, state, actor, context \\ %{}),
     to: Fides.Origination.Lifecycle,

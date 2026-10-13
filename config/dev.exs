@@ -105,5 +105,11 @@ config :fides, Fides.Banking.Callback,
   secret:
     System.get_env("FIDES_PROVIDER_WEBHOOK_SECRET", "fides development provider webhook secret")
 
+# The mocks app's receiver gets the demo's webhooks; the seeds register it
+config :fides, Fides.Notifications.Seeds,
+  receiver_url: System.get_env("FIDES_WEBHOOK_RECEIVER_URL", "http://localhost:4010/webhooks"),
+  receiver_secret:
+    System.get_env("FIDES_WEBHOOK_RECEIVER_SECRET", "fides development webhook receiver secret")
+
 # Short delays, so a demo sees a retry and a timeout happen
 config :fides, Fides.Orchestration, retry_after: 30, callback_timeout: 60
