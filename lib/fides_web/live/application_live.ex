@@ -645,7 +645,7 @@ defmodule FidesWeb.ApplicationLive do
             <span class="font-medium">{Format.label(access.field)}</span>
             <span class="text-zinc-600 dark:text-zinc-400">{access.reason}</span>
             <span class="ml-auto text-xs text-zinc-500 dark:text-zinc-400">
-              {who(access.accessed_by, @user_id)} · {Format.instant(access.accessed_at)}
+              {Format.staff(access.accessed_by, @user_id)} · {Format.instant(access.accessed_at)}
             </span>
           </li>
         </ul>
@@ -1207,9 +1207,6 @@ defmodule FidesWeb.ApplicationLive do
   end
 
   defp policy(policies, id), do: Map.get(policies, id)
-
-  defp who(user_id, user_id), do: "you"
-  defp who(staff_id, _user_id), do: Format.actor("staff_user:" <> staff_id)
 
   defp move_label(:approved), do: "Approve"
   defp move_label(:pending_countersign), do: "Approve, for countersign"

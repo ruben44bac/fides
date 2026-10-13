@@ -36,9 +36,6 @@ defmodule FidesWeb.ApplicationForm do
     :sex
   ]
 
-  # Units with up to two decimals, after a dot or a comma
-  @amount ~r/^\d{1,13}(?:[.,]\d{1,2})?$/
-
   # The action's fields on the form's; anything else lands on the holder
   @read_back %{
     amount_minor: :amount,
@@ -141,26 +138,7 @@ defmodule FidesWeb.ApplicationForm do
     end
   end
 
-  defp minor(value) do
-    case text(value) do
-      nil -> :blank
-      amount -> amount |> String.replace(" ", "") |> units_and_cents()
-    end
-  end
-
-  defp units_and_cents(amount) do
-    if Regex.match?(@amount, amount) do
-      {units, cents} =
-        case String.split(amount, ~r/[.,]/) do
-          [units] -> {units, "00"}
-          [units, cents] -> {units, String.pad_trailing(cents, 2, "0")}
-        end
-
-      {:ok, String.to_integer(units) * 100 + String.to_integer(cents)}
-    else
-      :error
-    end
-  end
+  defp minor(value), do: FidesWeb.Money.parse(value)
 
   defp minor!(value) do
     {:ok, minor} = minor(value)
