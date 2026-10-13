@@ -76,6 +76,33 @@ defmodule Fides.Orchestration do
     |> Ash.read(tenant: country, actor: actor)
   end
 
+  @job_states ~w(available scheduled executing retryable discarded)
+
+  @doc """
+  How many jobs each queue holds, by state: waiting to run, scheduled for later,
+  running, waiting to retry, and given up on. Every configured queue appears, in the
+  order of the configuration, with zeros when it is empty.
+  """
+  @spec queue_depths() :: [%{queue: atom(), counts: %{String.t() => non_neg_integer()}}]
+  def queue_depths do
+    require Ecto.Query
+
+    counts =
+      Oban.Job
+      |> Ecto.Query.where([job], job.state in @job_states)
+      |> Ecto.Query.group_by([job], [job.queue, job.state])
+      |> Ecto.Query.select([job], {job.queue, job.state, count(job.id)})
+      |> Fides.Platform.Repo.all()
+      |> Enum.group_by(fn {queue, _state, _count} -> queue end)
+
+    for {queue, _limit} <- Keyword.get(Application.get_env(:fides, Oban, []), :queues, []) do
+      by_state =
+        Map.new(Map.get(counts, Atom.to_string(queue), []), fn {_q, state, n} -> {state, n} end)
+
+      %{queue: queue, counts: Map.new(@job_states, &{&1, Map.get(by_state, &1, 0)})}
+    end
+  end
+
   @doc "Applies, by a job, the data a provider delivered later for a recorded event."
   defdelegate provider_callback(country, provider, event, parsed),
     to: Fides.Orchestration.ProviderCallback,

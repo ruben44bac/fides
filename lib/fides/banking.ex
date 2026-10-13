@@ -74,6 +74,43 @@ defmodule Fides.Banking do
     |> Ash.read(tenant: country, actor: actor)
   end
 
+  @doc """
+  How a country's provider has been doing: the provider, its last call, and the calls
+  of the last 24 hours with how many of them failed or timed out. Nil for a country
+  without an active provider.
+  """
+  @spec provider_status(String.t(), term()) ::
+          {:ok,
+           %{
+             provider: Fides.Banking.BankProvider.t(),
+             last: Fides.Banking.ProviderExchange.t() | nil,
+             calls: non_neg_integer(),
+             failures: non_neg_integer()
+           }
+           | nil}
+          | {:error, term()}
+  def provider_status(country, actor) do
+    require Ash.Query
+
+    since = DateTime.add(DateTime.utc_now(), -24, :hour)
+
+    with {:ok, providers} <- list_bank_providers(tenant: country, actor: actor),
+         %{} = provider <- Enum.find(providers, &(&1.status == :active)) || {:ok, nil},
+         {:ok, recent} <-
+           Fides.Banking.ProviderExchange
+           |> Ash.Query.filter(provider_id == ^provider.id and inserted_at >= ^since)
+           |> Ash.Query.sort(inserted_at: :desc)
+           |> Ash.read(tenant: country, actor: actor) do
+      {:ok,
+       %{
+         provider: provider,
+         last: List.first(recent),
+         calls: length(recent),
+         failures: Enum.count(recent, &(&1.status in [:error, :timeout]))
+       }}
+    end
+  end
+
   @doc "The call to a provider still waiting for its answer, by the request id the answer names."
   @spec pending_exchange(String.t(), String.t(), term()) ::
           {:ok, Fides.Banking.ProviderExchange.t() | nil} | {:error, term()}

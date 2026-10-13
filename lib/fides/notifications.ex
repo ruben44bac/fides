@@ -29,6 +29,7 @@ defmodule Fides.Notifications do
     resource Fides.Notifications.WebhookDelivery do
       define :announce_delivery, action: :announce
       define :record_delivery_attempt, action: :attempted, args: [:outcome, :http_status]
+      define :mark_delivery_pending, action: :resend
       define :list_deliveries, action: :read
       define :get_delivery, action: :read, get_by: [:id]
     end
@@ -56,4 +57,28 @@ defmodule Fides.Notifications do
 
   @doc "The language of a country's notices, from its locale."
   defdelegate language(country), to: Fides.Notifications.Templates
+
+  @doc "The deliveries of a country that failed every attempt, the latest first."
+  @spec failed_deliveries(String.t(), term()) :: {:ok, [struct()]} | {:error, term()}
+  def failed_deliveries(country, actor) do
+    require Ash.Query
+
+    Fides.Notifications.WebhookDelivery
+    |> Ash.Query.filter(state == :failed)
+    |> Ash.Query.sort(attempted_at: :desc)
+    |> Ash.read(tenant: country, actor: actor)
+  end
+
+  @doc """
+  Sends a failed delivery to its receiver again: back to pending, with a new job that
+  starts its attempts over.
+  """
+  @spec resend_delivery(struct(), term()) :: {:ok, struct()} | {:error, term()}
+  def resend_delivery(delivery, actor) do
+    with {:ok, pending} <-
+           mark_delivery_pending(delivery, tenant: delivery.country_code, actor: actor),
+         :ok <- Fides.Notifications.Deliver.enqueue(pending) do
+      {:ok, pending}
+    end
+  end
 end
