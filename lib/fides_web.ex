@@ -22,6 +22,7 @@ defmodule FidesWeb do
       Fides.Platform,
       Fides.Accounts,
       Fides.Origination,
+      Fides.Countries,
       Fides.Banking,
       Fides.Notifications,
       Fides.Orchestration,
@@ -101,6 +102,7 @@ defmodule FidesWeb do
       import Phoenix.HTML
       # Core UI components
       import FidesWeb.CoreComponents
+      import FidesWeb.BackofficeComponents
 
       # Common modules used in templates
       alias Phoenix.LiveView.JS

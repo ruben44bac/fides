@@ -10,6 +10,10 @@
 /* Required for Tailwind to automatically pick up changes in colocated CSS files in dev */
 @source "../../_build/dev/phoenix-colocated/fides/*/";
 
+/* The backoffice's own components use dark: variants, which follow the theme picked
+   on the page (see root.html.heex), not only the system's preference */
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
 /* A Tailwind plugin that makes "hero-#{ICON}" classes available.
    The heroicons installation itself is managed by your mix.exs */
 @plugin "../vendor/heroicons";

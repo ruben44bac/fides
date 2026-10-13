@@ -1,8 +1,7 @@
 defmodule FidesWeb.PageControllerTest do
-  use FidesWeb.ConnCase
+  use FidesWeb.ConnCase, async: true
 
-  test "GET /", %{conn: conn} do
-    conn = get(conn, ~p"/")
-    assert html_response(conn, 200) =~ "Peace of mind from prototype to production"
+  test "the home leads to the backoffice", %{conn: conn} do
+    assert redirected_to(get(conn, ~p"/")) == ~p"/backoffice"
   end
 end
