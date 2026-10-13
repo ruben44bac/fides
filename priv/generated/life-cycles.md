@@ -39,7 +39,7 @@ stateDiagram-v2
 | `evaluating` | Agent `risk` |
 | `in_review` | Enters the `review` queue; AI capability `case_brief` |
 | `info_requested` | Signed webhook `info_requested`; Notice to the applicant, `info_requested` |
-| `provider_error` | Scheduled retry of `bank_data`; Alert on the console, `provider_error` |
+| `provider_error` | Scheduled retry, back to `awaiting_bank_data`; Alert on the console, `provider_error` |
 | `pending_countersign` | Enters the `countersign` queue |
 | `approved` | Signed webhook `approved`; Notice to the applicant, `approved` |
 | `rejected` | Signed webhook `rejected`; Notice to the applicant, `rejected` |
@@ -80,7 +80,7 @@ stateDiagram-v2
 | `evaluating` | Agent `risk` |
 | `in_review` | Enters the `review` queue; AI capability `case_brief` |
 | `info_requested` | Signed webhook `info_requested`; Notice to the applicant, `info_requested` |
-| `provider_error` | Scheduled retry of `bank_data`; Alert on the console, `provider_error` |
+| `provider_error` | Scheduled retry, back to `awaiting_bank_data`; Alert on the console, `provider_error` |
 | `pending_countersign` | Enters the `countersign` queue |
 | `approved` | Signed webhook `approved`; Notice to the applicant, `approved` |
 | `rejected` | Signed webhook `rejected`; Notice to the applicant, `rejected` |
@@ -121,7 +121,7 @@ stateDiagram-v2
 | `evaluating` | Agent `risk` |
 | `in_review` | Enters the `review` queue; AI capability `case_brief` |
 | `info_requested` | Signed webhook `info_requested`; Notice to the applicant, `info_requested` |
-| `provider_error` | Scheduled retry of `bank_data`; Alert on the console, `provider_error` |
+| `provider_error` | Scheduled retry, back to `awaiting_bank_data`; Alert on the console, `provider_error` |
 | `pending_countersign` | Enters the `countersign` queue |
 | `approved` | Signed webhook `approved`; Notice to the applicant, `approved` |
 | `rejected` | Signed webhook `rejected`; Notice to the applicant, `rejected` |
@@ -162,7 +162,7 @@ stateDiagram-v2
 | `evaluating` | Agent `risk` |
 | `in_review` | Enters the `review` queue; AI capability `case_brief` |
 | `info_requested` | Signed webhook `info_requested`; Notice to the applicant, `info_requested` |
-| `provider_error` | Scheduled retry of `bank_data`; Alert on the console, `provider_error` |
+| `provider_error` | Scheduled retry, back to `awaiting_bank_data`; Alert on the console, `provider_error` |
 | `approved` | Signed webhook `approved`; Notice to the applicant, `approved` |
 | `rejected` | Signed webhook `rejected`; Notice to the applicant, `rejected` |
 | `cancelled` | Nothing |
@@ -199,7 +199,7 @@ stateDiagram-v2
 | `evaluating` | Agent `risk` |
 | `in_review` | Enters the `review` queue; AI capability `case_brief` |
 | `info_requested` | Signed webhook `info_requested`; Notice to the applicant, `info_requested` |
-| `provider_error` | Scheduled retry of `bank_data`; Alert on the console, `provider_error` |
+| `provider_error` | Scheduled retry, back to `awaiting_bank_data`; Alert on the console, `provider_error` |
 | `approved` | Signed webhook `approved`; Notice to the applicant, `approved` |
 | `rejected` | Signed webhook `rejected`; Notice to the applicant, `rejected` |
 | `cancelled` | Nothing |
@@ -236,7 +236,7 @@ stateDiagram-v2
 | `evaluating` | Agent `risk` |
 | `in_review` | Enters the `review` queue; AI capability `case_brief` |
 | `info_requested` | Signed webhook `info_requested`; Notice to the applicant, `info_requested` |
-| `provider_error` | Scheduled retry of `bank_data`; Alert on the console, `provider_error` |
+| `provider_error` | Scheduled retry, back to `awaiting_bank_data`; Alert on the console, `provider_error` |
 | `approved` | Signed webhook `approved`; Notice to the applicant, `approved` |
 | `rejected` | Signed webhook `rejected`; Notice to the applicant, `rejected` |
 | `cancelled` | Nothing |

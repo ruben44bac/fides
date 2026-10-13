@@ -4,9 +4,10 @@ defmodule Fides.Orchestration.Agents do
   effect that names an agent not listed here waits until that agent exists.
   """
 
+  alias Fides.Orchestration.Agents.Banking
   alias Fides.Orchestration.Agents.Intake
 
-  @agents [Intake]
+  @agents [Intake, Banking]
 
   @spec all() :: [module()]
   def all, do: @agents

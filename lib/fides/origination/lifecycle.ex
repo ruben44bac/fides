@@ -81,7 +81,7 @@ defmodule Fides.Origination.Lifecycle do
     evaluating: [agent: :risk],
     in_review: [queue: :review, capability: :case_brief],
     info_requested: [webhook: :info_requested, notice: :info_requested],
-    provider_error: [retry: :bank_data, alert: :provider_error],
+    provider_error: [retry: :awaiting_bank_data, alert: :provider_error],
     pending_countersign: [queue: :countersign],
     approved: [webhook: :approved, notice: :approved],
     rejected: [webhook: :rejected, notice: :rejected],
@@ -90,8 +90,8 @@ defmodule Fides.Origination.Lifecycle do
 
   @typedoc """
   Something that runs on entering a state: the orchestrator's own move, an agent, a
-  scheduled timeout or retry, a work queue, an AI capability, a signed webhook, a
-  notice to the applicant or an alert on the console.
+  scheduled timeout, a scheduled retry back to the state it names, a work queue, an AI
+  capability, a signed webhook, a notice to the applicant or an alert on the console.
   """
   @type effect ::
           {:transition

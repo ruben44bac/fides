@@ -99,3 +99,6 @@ config :fides, Fides.Accounts.Demo,
 # The simulated bank providers of the mocks app
 config :fides, Fides.Banking.Client,
   base_url: System.get_env("FIDES_PROVIDERS_URL", "http://localhost:4010")
+
+# Short delays, so a demo sees a retry and a timeout happen
+config :fides, Fides.Orchestration, retry_after: 30, callback_timeout: 60

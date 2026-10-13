@@ -10,7 +10,10 @@ defmodule Fides.Orchestration do
   """
 
   use Fides.Platform.Domain,
-    boundary: [deps: [Fides.Platform, Fides.Origination, Fides.Identity], exports: []]
+    boundary: [
+      deps: [Fides.Platform, Fides.Origination, Fides.Identity, Fides.Banking],
+      exports: []
+    ]
 
   resources do
     resource Fides.Orchestration.AgentRun do

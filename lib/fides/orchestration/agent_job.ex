@@ -14,6 +14,8 @@ defmodule Fides.Orchestration.AgentJob do
   alias Fides.Orchestration.Agents
   alias Fides.Orchestration.Assignment
   alias Fides.Orchestration.Orchestrator
+  alias Fides.Platform.AgentActor
+  alias Fides.Platform.AuditContext
 
   @doc "Enqueues `agent` on the application's current version."
   @spec enqueue(module(), struct()) :: :ok | {:error, term()}
@@ -24,7 +26,7 @@ defmodule Fides.Orchestration.AgentJob do
       country_code: application.country_code,
       lock_version: application.lock_version
     }
-    |> new(queue: agent.queue())
+    |> new(queue: agent.queue(Assignment.new(application)))
     |> Oban.insert()
     |> case do
       {:ok, _job} -> :ok
@@ -39,7 +41,13 @@ defmodule Fides.Orchestration.AgentJob do
     with {:ok, agent} <- Agents.fetch(name),
          {:ok, %{lock_version: ^version} = application} <- Orchestrator.application(id) do
       run = %{job_id: job.id, attempt: job.attempt, started: System.monotonic_time(:millisecond)}
-      proposal = agent.run(Assignment.new(application))
+      assignment = Assignment.new(application)
+
+      proposal =
+        assignment
+        |> run_as_agent(agent)
+        |> last_attempt(agent, assignment, job)
+
       Orchestrator.confirm(application, agent, proposal, run)
     else
       :error -> {:cancel, :unknown_agent}
@@ -48,4 +56,22 @@ defmodule Fides.Orchestration.AgentJob do
       {:error, error} -> {:error, error}
     end
   end
+
+  # What an agent writes with its tools, such as a provider's answer, is its own
+  defp run_as_agent(assignment, agent) do
+    actor = agent.name() |> AgentActor.new() |> AgentActor.audit_id()
+
+    AuditContext.run([actor: actor, reason: "#{agent.name()} run"], fn ->
+      agent.run(assignment)
+    end)
+  end
+
+  defp last_attempt({:retry, reason}, agent, assignment, %{attempt: attempt, max_attempts: max})
+       when attempt >= max do
+    if function_exported?(agent, :exhausted, 2),
+      do: agent.exhausted(assignment, reason),
+      else: {:escalate, reason}
+  end
+
+  defp last_attempt(proposal, _agent, _assignment, _job), do: proposal
 end

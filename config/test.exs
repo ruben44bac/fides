@@ -64,3 +64,6 @@ config :fides, Mix.Tasks.Fides.Token, req_options: [plug: {Req.Test, Mix.Tasks.F
 config :fides, Fides.Banking.Client,
   base_url: "http://providers.test",
   req_options: [plug: {Req.Test, Fides.Banking.Client}]
+
+# Delayed moves are due at once
+config :fides, Fides.Orchestration, retry_after: 0, callback_timeout: 0

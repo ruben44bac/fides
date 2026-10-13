@@ -6,14 +6,17 @@ defmodule Fides.Orchestration.Step do
   A step only acts on the version whose write enqueued it: if the application has
   changed since, a newer step is on its way, and this one is dropped. Otherwise it
   runs what the country's life cycle declares on entering the current state: its own
-  move to the next state, or an agent's job in the agent's queue. Effects the
-  orchestrator cannot run yet wait.
+  move to the next state, an agent's job in the agent's queue, a retry back to an
+  earlier state, scheduled for later, or the timeout of a provider's webhook, after
+  which the application is in provider_error. Effects the orchestrator cannot run yet
+  wait.
   """
 
   use Oban.Worker, queue: :orchestration, max_attempts: 20
 
   alias Fides.Orchestration.AgentJob
   alias Fides.Orchestration.Agents
+  alias Fides.Orchestration.DelayedMove
   alias Fides.Orchestration.Orchestrator
   alias Fides.Origination
 
@@ -54,5 +57,14 @@ defmodule Fides.Orchestration.Step do
     end
   end
 
+  defp run({:retry, to}, application),
+    do: DelayedMove.schedule(application, to, setting(:retry_after, 300))
+
+  defp run({:timeout, _name}, application),
+    do: DelayedMove.schedule(application, :provider_error, setting(:callback_timeout, 600))
+
   defp run(_not_yet, _application), do: :ok
+
+  defp setting(key, default),
+    do: :fides |> Application.get_env(Fides.Orchestration, []) |> Keyword.get(key, default)
 end
