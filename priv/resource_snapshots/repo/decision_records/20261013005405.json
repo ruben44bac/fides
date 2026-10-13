@@ -1,0 +1,299 @@
+{
+  "attributes": [
+    {
+      "allow_nil?": false,
+      "default": "fragment(\"uuidv7()\")",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": true,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "id",
+      "type": "uuid"
+    },
+    {
+      "allow_nil?": false,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": 2,
+      "source": "country_code",
+      "type": "varchar"
+    },
+    {
+      "allow_nil?": false,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "application_id",
+      "type": "uuid"
+    },
+    {
+      "allow_nil?": false,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "revision_id",
+      "type": "uuid"
+    },
+    {
+      "allow_nil?": false,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "policy_version_id",
+      "type": "uuid"
+    },
+    {
+      "allow_nil?": false,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "bank_profile_id",
+      "type": "uuid"
+    },
+    {
+      "allow_nil?": true,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "replaces_id",
+      "type": "uuid"
+    },
+    {
+      "allow_nil?": false,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "cause",
+      "type": "text"
+    },
+    {
+      "allow_nil?": false,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "inputs",
+      "type": "map"
+    },
+    {
+      "allow_nil?": false,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "inputs_hash",
+      "type": "binary"
+    },
+    {
+      "allow_nil?": false,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "rule_results",
+      "type": [
+        "array",
+        "map"
+      ]
+    },
+    {
+      "allow_nil?": false,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "outcome",
+      "type": "text"
+    },
+    {
+      "allow_nil?": false,
+      "default": "[]",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "reason_codes",
+      "type": [
+        "array",
+        "text"
+      ]
+    },
+    {
+      "allow_nil?": false,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "engine_sha",
+      "type": "text"
+    },
+    {
+      "allow_nil?": false,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "hash",
+      "type": "binary"
+    },
+    {
+      "allow_nil?": false,
+      "default": "fragment(\"(now() AT TIME ZONE 'utc')\")",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "inserted_at",
+      "type": "timestamptz(6)"
+    }
+  ],
+  "base_filter": null,
+  "check_constraints": [],
+  "create_table_options": null,
+  "custom_indexes": [
+    {
+      "all_tenants?": false,
+      "concurrently": false,
+      "error_fields": [
+        "application_id",
+        "inserted_at"
+      ],
+      "fields": [
+        {
+          "type": "atom",
+          "value": "application_id"
+        },
+        {
+          "type": "atom",
+          "value": "inserted_at"
+        }
+      ],
+      "include": null,
+      "include_base_filter?": true,
+      "message": null,
+      "name": null,
+      "nulls_distinct": true,
+      "prefix": null,
+      "table": null,
+      "unique": false,
+      "using": null,
+      "where": null
+    }
+  ],
+  "custom_statements": [
+    {
+      "after_tables": [],
+      "code?": false,
+      "down": "DROP INDEX decision_records_country_code_id_index",
+      "global?": false,
+      "name": "country_id_unique",
+      "up": "CREATE UNIQUE INDEX decision_records_country_code_id_index ON decision_records (country_code, id)"
+    },
+    {
+      "after_tables": [
+        "countries"
+      ],
+      "code?": false,
+      "down": "ALTER TABLE decision_records DROP CONSTRAINT decision_records_country_code_fkey",
+      "global?": false,
+      "name": "country_foreign_key",
+      "up": "ALTER TABLE decision_records ADD CONSTRAINT decision_records_country_code_fkey FOREIGN KEY (country_code) REFERENCES countries (code)"
+    },
+    {
+      "after_tables": [],
+      "code?": false,
+      "down": "DROP TRIGGER decision_records_append_only ON decision_records",
+      "global?": false,
+      "name": "append_only",
+      "up": "CREATE TRIGGER decision_records_append_only BEFORE UPDATE OR DELETE ON decision_records\nFOR EACH ROW EXECUTE FUNCTION fides_forbid_change()\n"
+    },
+    {
+      "after_tables": [],
+      "code?": false,
+      "down": "DROP TRIGGER decision_records_immutable_columns ON decision_records",
+      "global?": false,
+      "name": "immutable_columns",
+      "up": "CREATE TRIGGER decision_records_immutable_columns BEFORE UPDATE ON decision_records\nFOR EACH ROW EXECUTE FUNCTION fides_forbid_column_change('country_code')\n"
+    },
+    {
+      "after_tables": [],
+      "code?": true,
+      "down": "Carbonite.Migrations.drop_trigger(\"decision_records\")",
+      "global?": false,
+      "name": "carbonite_capture",
+      "up": "Carbonite.Migrations.create_trigger(\"decision_records\")"
+    },
+    {
+      "after_tables": [],
+      "code?": false,
+      "down": "ALTER TABLE decision_records\n  DROP CONSTRAINT decision_records_replaces_fkey,\n  DROP CONSTRAINT decision_records_bank_profile_fkey,\n  DROP CONSTRAINT decision_records_revision_fkey,\n  DROP CONSTRAINT decision_records_application_fkey,\n  DROP CONSTRAINT decision_records_policy_version_fkey\n",
+      "global?": false,
+      "name": "foreign_keys",
+      "up": "ALTER TABLE decision_records\n  ADD CONSTRAINT decision_records_policy_version_fkey\n    FOREIGN KEY (country_code, policy_version_id) REFERENCES policy_versions (country_code, id),\n  ADD CONSTRAINT decision_records_application_fkey\n    FOREIGN KEY (country_code, application_id) REFERENCES credit_applications (country_code, id),\n  ADD CONSTRAINT decision_records_revision_fkey\n    FOREIGN KEY (country_code, revision_id) REFERENCES application_revisions (country_code, id),\n  ADD CONSTRAINT decision_records_bank_profile_fkey\n    FOREIGN KEY (country_code, bank_profile_id) REFERENCES bank_profiles (country_code, id),\n  ADD CONSTRAINT decision_records_replaces_fkey\n    FOREIGN KEY (country_code, replaces_id) REFERENCES decision_records (country_code, id)\n"
+    }
+  ],
+  "has_create_action": true,
+  "hash": "122040B186F44B8346FE4EEEE09E6B3B06ECC70BA190D72340A5A6DA07768FD4",
+  "identities": [],
+  "multitenancy": {
+    "attribute": "country_code",
+    "global": false,
+    "strategy": "attribute"
+  },
+  "repo": "Elixir.Fides.Platform.Repo",
+  "schema": null,
+  "table": "decision_records",
+  "temporal": null
+}

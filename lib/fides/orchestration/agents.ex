@@ -6,8 +6,9 @@ defmodule Fides.Orchestration.Agents do
 
   alias Fides.Orchestration.Agents.Banking
   alias Fides.Orchestration.Agents.Intake
+  alias Fides.Orchestration.Agents.Risk
 
-  @agents [Intake, Banking]
+  @agents [Intake, Banking, Risk]
 
   @spec all() :: [module()]
   def all, do: @agents

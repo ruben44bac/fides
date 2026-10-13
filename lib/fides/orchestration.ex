@@ -16,7 +16,8 @@ defmodule Fides.Orchestration do
         Fides.Origination,
         Fides.Identity,
         Fides.Banking,
-        Fides.Notifications
+        Fides.Notifications,
+        Fides.Risk
       ],
       exports: []
     ]
@@ -30,6 +31,22 @@ defmodule Fides.Orchestration do
     resource Fides.Orchestration.CaseFact do
       define :record_case_fact, action: :record
       define :list_case_facts, action: :read
+    end
+  end
+
+  @doc "The facts of a case by name, each the latest one recorded."
+  @spec case_facts(String.t(), Ecto.UUID.t(), term()) ::
+          {:ok, %{String.t() => map()}} | {:error, term()}
+  def case_facts(country, application_id, actor) do
+    require Ash.Query
+
+    Fides.Orchestration.CaseFact
+    |> Ash.Query.filter(application_id == ^application_id)
+    |> Ash.Query.sort(inserted_at: :asc)
+    |> Ash.read(tenant: country, actor: actor)
+    |> case do
+      {:ok, facts} -> {:ok, Map.new(facts, &{&1.name, &1.value})}
+      {:error, error} -> {:error, error}
     end
   end
 

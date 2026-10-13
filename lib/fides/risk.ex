@@ -12,9 +12,25 @@ defmodule Fides.Risk do
       define :propose_policy, action: :propose, args: [:params]
       define :publish_policy, action: :publish
       define :policy_in_force, action: :in_force, not_found_error?: false
+      define :get_policy_version, action: :read, get_by: [:id]
       define :list_policy_versions, action: :read
     end
+
+    resource Fides.Risk.DecisionRecord do
+      define :record_decision, action: :record
+      define :list_decisions, action: :read
+    end
   end
+
+  @doc """
+  Decides an application with the policy version in force in its country and keeps
+  the decision. `evaluation` carries the country, the application, its revision, the
+  bank profile and the canonical inputs; the actor is who evaluates.
+  """
+  defdelegate decide(evaluation, opts), to: Fides.Risk.Decide, as: :run
+
+  @doc "The latest decision on an application, or nil."
+  defdelegate latest_decision(application_id, opts), to: Fides.Risk.Decide, as: :latest
 
   @doc "Evaluates canonical inputs with a policy's parameters."
   defdelegate evaluate(inputs, params), to: Fides.Risk.Engine

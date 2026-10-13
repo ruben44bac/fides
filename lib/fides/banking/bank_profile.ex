@@ -75,7 +75,7 @@ defmodule Fides.Banking.BankProfile do
   policies do
     policy action_type(:read) do
       authorize_if SystemActor
-      authorize_if {Agent, names: [:banking]}
+      authorize_if {Agent, names: [:banking, :risk]}
       authorize_if {GlobalRole, roles: [:admin, :auditor]}
       authorize_if {ScopedRole, roles: [:analyst, :risk_manager]}
     end
