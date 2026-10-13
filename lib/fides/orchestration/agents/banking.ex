@@ -17,6 +17,15 @@ defmodule Fides.Orchestration.Agents.Banking do
   alias Fides.Platform.AgentActor
 
   @tool "banking.fetch_profile"
+  # One queue per country's provider
+  @queues %{
+    "ES" => :banking_es,
+    "PT" => :banking_pt,
+    "IT" => :banking_it,
+    "MX" => :banking_mx,
+    "CO" => :banking_co,
+    "BR" => :banking_br
+  }
 
   @impl true
   def name, do: :banking
@@ -25,7 +34,7 @@ defmodule Fides.Orchestration.Agents.Banking do
   def version, do: 1
 
   @impl true
-  def queue(assignment), do: :"banking_#{String.downcase(assignment.country_code)}"
+  def queue(assignment), do: Map.fetch!(@queues, assignment.country_code)
 
   @impl true
   def run(assignment) do
