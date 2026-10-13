@@ -90,6 +90,7 @@ defmodule FidesWeb.Router do
       live "/backoffice/applications/new", NewApplicationLive, :new
       live "/backoffice/applications/:id", ApplicationLive, :show
       live "/backoffice/policies", PoliciesLive, :index
+      live "/backoffice/console", ConsoleLive, :index
       live "/backoffice/settings", SettingsLive, :show
     end
   end
