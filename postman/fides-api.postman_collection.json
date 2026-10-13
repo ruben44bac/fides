@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Fides API",
-    "description": "The staff API for credit applications. Staff sign in with their password and a TOTP\ncode, and send the bearer token on every other request.\n\n## Before you start\n\n1. Migrate and seed the database: `mix ecto.migrate && mix run priv/repo/seeds.exs`.\n   The seeds create the demo staff and put each country's first policy version in force.\n2. Start the simulated bank providers: `cd mocks && mix run --no-halt`, on port 4010.\n3. Start the app with `mix phx.server`. `baseUrl` points to http://localhost:4000.\n\n## Running it\n\nRun folders 1 to 6 in order, one by one or with the Collection Runner. The\norchestrator validates each application and fetches its bank data as it arrives; the\nlast request of folder 6 prints a command that moves its three applications on to\nreview, as the orchestrator will once its risk agent exists. Run it in a terminal,\nthen run folders 7 to 9.\n\nEvery request that changes something carries an `Idempotency-Key`, a new one each\ntime unless a request repeats one on purpose. Requests save the ids and versions the\nnext ones use as collection variables.\n\nThe demo users' TOTP codes come from the development seed in `totpSeed`, so no\nauthenticator is needed. A code works once per user: the sign-in requests remember\nwhich they used and, when needed, wait up to 30 seconds for the next one.",
+    "description": "The staff API for credit applications. Staff sign in with their password and a TOTP\ncode, and send the bearer token on every other request.\n\n## Before you start\n\n1. Migrate and seed the database: `mix ecto.migrate && mix run priv/repo/seeds.exs`.\n   The seeds create the demo staff and put each country's first policy version in force.\n2. Start the simulated bank providers: `cd mocks && mix run --no-halt`, on port 4010.\n3. Start the app with `mix phx.server`. `baseUrl` points to http://localhost:4000.\n\n## Running it\n\nRun the folders in order, one by one or with the Collection Runner. The orchestrator\ntakes each application through validation, the bank data and the risk evaluation on\nits own, so the requests that move an application first wait for it to rest.\n\nEvery request that changes something carries an `Idempotency-Key`, a new one each\ntime unless a request repeats one on purpose. Requests save the ids and versions the\nnext ones use as collection variables.\n\nThe demo users' TOTP codes come from the development seed in `totpSeed`, so no\nauthenticator is needed. A code works once per user: the sign-in requests remember\nwhich they used and, when needed, wait up to 30 seconds for the next one.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -400,7 +400,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"data\": {\n    \"country_code\": \"ES\",\n    \"amount_minor\": 1500000,\n    \"monthly_income_minor\": 300000,\n    \"currency\": \"EUR\",\n    \"channel\": \"api\",\n    \"consent_text_version\": \"2026-10\",\n    \"holder\": {\n      \"document_type\": \"DNI\",\n      \"document\": \"{{document}}\",\n      \"given_names\": \"Ana\",\n      \"first_surname\": \"Ruiz\",\n      \"email\": \"ana.{{document}}@example.com\"\n    }\n  }\n}",
+              "raw": "{\n  \"data\": {\n    \"country_code\": \"ES\",\n    \"amount_minor\": 2500000,\n    \"monthly_income_minor\": 300000,\n    \"currency\": \"EUR\",\n    \"channel\": \"api\",\n    \"consent_text_version\": \"2026-10\",\n    \"holder\": {\n      \"document_type\": \"DNI\",\n      \"document\": \"{{document}}\",\n      \"given_names\": \"Ana\",\n      \"first_surname\": \"Ruiz\",\n      \"email\": \"ana.{{document}}@example.com\"\n    }\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -445,7 +445,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"data\": {\n    \"country_code\": \"ES\",\n    \"amount_minor\": 1500000,\n    \"monthly_income_minor\": 300000,\n    \"currency\": \"EUR\",\n    \"channel\": \"api\",\n    \"consent_text_version\": \"2026-10\",\n    \"holder\": {\n      \"document_type\": \"DNI\",\n      \"document\": \"{{document}}\",\n      \"given_names\": \"Ana\",\n      \"first_surname\": \"Ruiz\",\n      \"email\": \"ana.{{document}}@example.com\"\n    }\n  }\n}",
+              "raw": "{\n  \"data\": {\n    \"country_code\": \"ES\",\n    \"amount_minor\": 2500000,\n    \"monthly_income_minor\": 300000,\n    \"currency\": \"EUR\",\n    \"channel\": \"api\",\n    \"consent_text_version\": \"2026-10\",\n    \"holder\": {\n      \"document_type\": \"DNI\",\n      \"document\": \"{{document}}\",\n      \"given_names\": \"Ana\",\n      \"first_surname\": \"Ruiz\",\n      \"email\": \"ana.{{document}}@example.com\"\n    }\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -490,7 +490,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"data\": {\n    \"country_code\": \"ES\",\n    \"amount_minor\": 1600000,\n    \"monthly_income_minor\": 300000,\n    \"currency\": \"EUR\",\n    \"channel\": \"api\",\n    \"consent_text_version\": \"2026-10\",\n    \"holder\": {\n      \"document_type\": \"DNI\",\n      \"document\": \"{{document}}\",\n      \"given_names\": \"Ana\",\n      \"first_surname\": \"Ruiz\",\n      \"email\": \"ana.{{document}}@example.com\"\n    }\n  }\n}",
+              "raw": "{\n  \"data\": {\n    \"country_code\": \"ES\",\n    \"amount_minor\": 2600000,\n    \"monthly_income_minor\": 300000,\n    \"currency\": \"EUR\",\n    \"channel\": \"api\",\n    \"consent_text_version\": \"2026-10\",\n    \"holder\": {\n      \"document_type\": \"DNI\",\n      \"document\": \"{{document}}\",\n      \"given_names\": \"Ana\",\n      \"first_surname\": \"Ruiz\",\n      \"email\": \"ana.{{document}}@example.com\"\n    }\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -531,7 +531,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"data\": {\n    \"country_code\": \"ES\",\n    \"amount_minor\": 1500000,\n    \"monthly_income_minor\": 300000,\n    \"currency\": \"EUR\",\n    \"channel\": \"api\",\n    \"consent_text_version\": \"2026-10\",\n    \"holder\": {\n      \"document_type\": \"DNI\",\n      \"document\": \"{{document}}\",\n      \"given_names\": \"Ana\",\n      \"first_surname\": \"Ruiz\",\n      \"email\": \"ana.{{document}}@example.com\"\n    }\n  }\n}",
+              "raw": "{\n  \"data\": {\n    \"country_code\": \"ES\",\n    \"amount_minor\": 2500000,\n    \"monthly_income_minor\": 300000,\n    \"currency\": \"EUR\",\n    \"channel\": \"api\",\n    \"consent_text_version\": \"2026-10\",\n    \"holder\": {\n      \"document_type\": \"DNI\",\n      \"document\": \"{{document}}\",\n      \"given_names\": \"Ana\",\n      \"first_surname\": \"Ruiz\",\n      \"email\": \"ana.{{document}}@example.com\"\n    }\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -712,7 +712,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"data\": {\n    \"country_code\": \"ES\",\n    \"amount_minor\": 1500000,\n    \"monthly_income_minor\": 300000,\n    \"currency\": \"EUR\",\n    \"channel\": \"api\",\n    \"consent_text_version\": \"2026-10\",\n    \"holder\": {\n      \"document_type\": \"DNI\",\n      \"document\": \"{{document}}\",\n      \"given_names\": \"Ana\",\n      \"first_surname\": \"Ruiz\",\n      \"email\": \"ana.{{document}}@example.com\"\n    }\n  }\n}",
+              "raw": "{\n  \"data\": {\n    \"country_code\": \"ES\",\n    \"amount_minor\": 2500000,\n    \"monthly_income_minor\": 300000,\n    \"currency\": \"EUR\",\n    \"channel\": \"api\",\n    \"consent_text_version\": \"2026-10\",\n    \"holder\": {\n      \"document_type\": \"DNI\",\n      \"document\": \"{{document}}\",\n      \"given_names\": \"Ana\",\n      \"first_surname\": \"Ruiz\",\n      \"email\": \"ana.{{document}}@example.com\"\n    }\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -727,7 +727,7 @@
     },
     {
       "name": "3 · Move",
-      "description": "Moves the application through its life cycle. Each move names the version of the\napplication it expects, and fails without changes when the application changed since.\n\nThe orchestrator validates the holder and fetches the bank data as soon as the\napplication arrives, so each request here first waits, up to 20 seconds, until the\napplication rests: in `evaluating` with the mocks app running, in\n`awaiting_bank_data` without it.",
+      "description": "Moves the application through its life cycle. Each move names the version of the\napplication it expects, and fails without changes when the application changed since.\n\nThe orchestrator validates the holder and fetches the bank data as soon as the\napplication arrives, so each request here first waits, up to 20 seconds, until the\napplication rests: in review with the mocks app running, since its amount sends it\nthere, or in `awaiting_bank_data` without it.",
       "item": [
         {
           "name": "Available moves",
@@ -741,8 +741,8 @@
                   "",
                   "pm.test(\"lists the moves the analyst may make, and the current version\", () => {",
                   "  pm.response.to.have.status(200);",
-                  "  pm.expect(moves.state).to.be.oneOf([\"awaiting_bank_data\", \"evaluating\", \"provider_error\"]);",
-                  "  pm.expect(moves.transitions).to.eql([\"cancelled\"]);",
+                  "  pm.expect(moves.state).to.be.oneOf([\"in_review\", \"awaiting_bank_data\", \"provider_error\"]);",
+                  "  pm.expect(moves.transitions).to.include(\"cancelled\");",
                   "});",
                   "",
                   "pm.collectionVariables.set(\"lockVersion\", moves.lock_version);"
@@ -776,7 +776,7 @@
                   "});",
                   "",
                   "pm.test(\"lists the moves allowed instead\", () => {",
-                  "  pm.expect(pm.response.json().errors[0].meta.available).to.eql([\"cancelled\"]);",
+                  "  pm.expect(pm.response.json().errors[0].meta.available).to.include(\"cancelled\");",
                   "});"
                 ]
               }
@@ -800,7 +800,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"data\": {\n    \"to\": \"approved\",\n    \"reason\": \"Looks good\",\n    \"expected_version\": {{lockVersion}}\n  }\n}",
+              "raw": "{\n  \"data\": {\n    \"to\": \"validating\",\n    \"reason\": \"Back to validation\",\n    \"expected_version\": {{lockVersion}}\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -983,7 +983,7 @@
               "  { key: \"Accept\", value: \"application/vnd.api+json\" }",
               "];",
               "const deadline = Date.now() + 20000;",
-              "const moving = [\"submitted\", \"validating\", \"awaiting_bank_data\", \"awaiting_bank_callback\"];",
+              "const moving = [\"submitted\", \"validating\", \"awaiting_bank_data\", \"awaiting_bank_callback\", \"evaluating\"];",
               "",
               "const wait = () =>",
               "  pm.sendRequest({ url, method: \"GET\", header }, (error, response) => {",
@@ -1225,7 +1225,7 @@
                 "value": "application/vnd.api+json"
               }
             ],
-            "url": "{{baseUrl}}/api/applications?filter[state]=cancelled&filter[amount_minor][greater_than_or_equal]=1500000&filter[submitted_at][greater_than_or_equal]={{submittedAt}}"
+            "url": "{{baseUrl}}/api/applications?filter[state]=cancelled&filter[amount_minor][greater_than_or_equal]=2500000&filter[submitted_at][greater_than_or_equal]={{submittedAt}}"
           },
           "response": []
         },
@@ -1351,7 +1351,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"data\": {\n    \"country_code\": \"ES\",\n    \"document\": \"{{document}}\",\n    \"state\": \"cancelled\",\n    \"min_amount_minor\": 1000000,\n    \"max_amount_minor\": 2000000,\n    \"submitted_from\": \"{{submittedAt}}\"\n  }\n}",
+              "raw": "{\n  \"data\": {\n    \"country_code\": \"ES\",\n    \"document\": \"{{document}}\",\n    \"state\": \"cancelled\",\n    \"min_amount_minor\": 2000000,\n    \"max_amount_minor\": 3000000,\n    \"submitted_from\": \"{{submittedAt}}\"\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1441,7 +1441,7 @@
     },
     {
       "name": "6 · Review: prepare",
-      "description": "Submits three applications, for three ways out of review: one to request more\ninformation, one to approve, and one above the countersign threshold of Spain's\npolicy (50 000 EUR). The orchestrator validates each holder and fetches the bank data on\nits own; until its risk agent exists, the last request prints the command that moves\nthe three on to review.",
+      "description": "Submits three applications above 20 000 EUR, which Spain's policy sends to review:\none to request more information, one to approve, and one above the countersign\nthreshold (50 000 EUR). The orchestrator validates each holder, fetches the bank data\nand evaluates on its own.",
       "item": [
         {
           "name": "Submit one to request information",
@@ -1481,7 +1481,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"data\": {\n    \"country_code\": \"ES\",\n    \"amount_minor\": 1500000,\n    \"monthly_income_minor\": 300000,\n    \"currency\": \"EUR\",\n    \"channel\": \"api\",\n    \"consent_text_version\": \"2026-10\",\n    \"holder\": {\n      \"document_type\": \"DNI\",\n      \"document\": \"{{reviewDocument}}\",\n      \"given_names\": \"Ana\",\n      \"first_surname\": \"Ruiz\",\n      \"email\": \"ana.{{reviewDocument}}@example.com\"\n    }\n  }\n}",
+              "raw": "{\n  \"data\": {\n    \"country_code\": \"ES\",\n    \"amount_minor\": 2500000,\n    \"monthly_income_minor\": 300000,\n    \"currency\": \"EUR\",\n    \"channel\": \"api\",\n    \"consent_text_version\": \"2026-10\",\n    \"holder\": {\n      \"document_type\": \"DNI\",\n      \"document\": \"{{reviewDocument}}\",\n      \"given_names\": \"Ana\",\n      \"first_surname\": \"Ruiz\",\n      \"email\": \"ana.{{reviewDocument}}@example.com\"\n    }\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1530,7 +1530,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"data\": {\n    \"country_code\": \"ES\",\n    \"amount_minor\": 2500000,\n    \"monthly_income_minor\": 300000,\n    \"currency\": \"EUR\",\n    \"channel\": \"api\",\n    \"consent_text_version\": \"2026-10\",\n    \"holder\": {\n      \"document_type\": \"DNI\",\n      \"document\": \"{{reviewDocument}}\",\n      \"given_names\": \"Ana\",\n      \"first_surname\": \"Ruiz\",\n      \"email\": \"ana.{{reviewDocument}}@example.com\"\n    }\n  }\n}",
+              "raw": "{\n  \"data\": {\n    \"country_code\": \"ES\",\n    \"amount_minor\": 3000000,\n    \"monthly_income_minor\": 300000,\n    \"currency\": \"EUR\",\n    \"channel\": \"api\",\n    \"consent_text_version\": \"2026-10\",\n    \"holder\": {\n      \"document_type\": \"DNI\",\n      \"document\": \"{{reviewDocument}}\",\n      \"given_names\": \"Ana\",\n      \"first_surname\": \"Ruiz\",\n      \"email\": \"ana.{{reviewDocument}}@example.com\"\n    }\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1556,14 +1556,7 @@
                   "  pm.expect(application.state).to.eql(\"submitted\");",
                   "});",
                   "",
-                  "pm.collectionVariables.set(\"countersignId\", application.id);",
-                  "",
-                  "const command =",
-                  "  \"mix fides.advance \" +",
-                  "  [\"infoId\", \"approveId\", \"countersignId\"].map(name => pm.collectionVariables.get(name)).join(\" \");",
-                  "",
-                  "console.log(command);",
-                  "pm.visualizer.set(\"<p>Move the three applications to review, then run the next folder:</p><pre>{{command}}</pre>\", { command });"
+                  "pm.collectionVariables.set(\"countersignId\", application.id);"
                 ]
               }
             }
@@ -1613,8 +1606,8 @@
       ]
     },
     {
-      "name": "7 · Review: after mix fides.advance",
-      "description": "Run `mix fides.advance` with the ids of the previous folder first: the last request\nthere prints the command, also in the Postman console.\n\nAn analyst asks for information, approves, or, above the countersign threshold,\nsends the approval to a risk manager, who countersigns it.",
+      "name": "7 · Review",
+      "description": "The orchestrator takes the three applications of the previous folder to review on its\nown, with the mocks app running; each request here first waits, up to 30 seconds, for\nthe application it names to get there.\n\nAn analyst asks for information, approves, or, above the countersign threshold,\nsends the approval to a risk manager, who countersigns it.",
       "item": [
         {
           "name": "Moves in review",
@@ -1628,7 +1621,7 @@
                   "",
                   "pm.test(\"is waiting for review\", () => {",
                   "  pm.response.to.have.status(200);",
-                  "  pm.expect(moves.state, \"run mix fides.advance with the ids from the previous folder\").to.eql(\"in_review\");",
+                  "  pm.expect(moves.state, \"the orchestrator takes the application to review on its own; is the mocks app running?\").to.eql(\"in_review\");",
                   "});",
                   "",
                   "pm.test(\"lists the moves the analyst may make\", () => {",
@@ -1763,7 +1756,7 @@
                   "",
                   "pm.test(\"is waiting for review\", () => {",
                   "  pm.response.to.have.status(200);",
-                  "  pm.expect(moves.state, \"run mix fides.advance with the ids from the previous folder\").to.eql(\"in_review\");",
+                  "  pm.expect(moves.state, \"the orchestrator takes the application to review on its own; is the mocks app running?\").to.eql(\"in_review\");",
                   "});",
                   "",
                   "pm.test(\"lists the moves the analyst may make\", () => {",
@@ -1848,7 +1841,7 @@
                   "",
                   "pm.test(\"is waiting for review\", () => {",
                   "  pm.response.to.have.status(200);",
-                  "  pm.expect(moves.state, \"run mix fides.advance with the ids from the previous folder\").to.eql(\"in_review\");",
+                  "  pm.expect(moves.state, \"the orchestrator takes the application to review on its own; is the mocks app running?\").to.eql(\"in_review\");",
                   "});",
                   "",
                   "pm.test(\"lists the moves the analyst may make\", () => {",
@@ -1980,6 +1973,35 @@
             "url": "{{baseUrl}}/api/applications/{{countersignId}}/transitions"
           },
           "response": []
+        }
+      ],
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const match = pm.variables.replaceIn(pm.request.url.toString()).match(/applications\\/([0-9a-f-]{36})/);",
+              "if (match) {",
+              "  const url = pm.variables.replaceIn(\"{{baseUrl}}/api/applications/\" + match[1] + \"/transitions\");",
+              "  const header = [",
+              "    { key: \"Authorization\", value: \"Bearer \" + pm.collectionVariables.get(\"token\") },",
+              "    { key: \"Accept\", value: \"application/vnd.api+json\" }",
+              "  ];",
+              "  const moving = [\"submitted\", \"validating\", \"awaiting_bank_data\", \"awaiting_bank_callback\", \"evaluating\"];",
+              "  const deadline = Date.now() + 30000;",
+              "",
+              "  const wait = () =>",
+              "    pm.sendRequest({ url, method: \"GET\", header }, (error, response) => {",
+              "      const state = !error && response.code === 200 ? response.json().state : null;",
+              "      if ((state && !moving.includes(state)) || Date.now() > deadline) return;",
+              "      setTimeout(wait, 500);",
+              "    });",
+              "",
+              "  wait();",
+              "}"
+            ]
+          }
         }
       ]
     },
