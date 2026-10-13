@@ -9,6 +9,10 @@ defmodule FidesWeb.ApplicationLive do
   with a reason the evidence keeps. A move on a version that is no longer current does
   not happen: the screen says so and offers to read the application again, keeping
   what was written.
+
+  The holder's personal data stays hidden. The staff of the holder's country reveal one
+  field at a time, for a reason that goes to the access log with who looked and when;
+  what was revealed lives only on this screen, until hidden or left.
   """
 
   use FidesWeb, :live_view
@@ -16,17 +20,75 @@ defmodule FidesWeb.ApplicationLive do
   alias Fides.Origination.TransitionNotAllowed
   alias Fides.Platform.ChangeListener
   alias FidesWeb.Format
+  alias FidesWeb.StaffScope
+
+  @personal_fields [:name, :document, :email]
 
   @impl true
-  def mount(_params, _session, socket),
-    do: {:ok, assign(socket, subscribed: nil, move: nil, move_form: nil, conflict?: false)}
+  def mount(_params, _session, socket) do
+    {:ok,
+     assign(socket,
+       subscribed: nil,
+       move: nil,
+       move_form: nil,
+       conflict?: false,
+       revealed: %{},
+       revealing: nil,
+       reveal_form: nil
+     )}
+  end
 
   @impl true
   def handle_params(%{"id" => id}, _uri, socket), do: {:noreply, load(socket, id)}
 
+  # Picking a field opens the form for the reason to see it; picking none closes it
+  @impl true
+  def handle_event("reveal", params, socket) do
+    case Enum.find(@personal_fields, &(Atom.to_string(&1) == params["field"])) do
+      nil -> {:noreply, assign(socket, revealing: nil, reveal_form: nil)}
+      field -> {:noreply, assign(socket, revealing: field, reveal_form: reveal_form(""))}
+    end
+  end
+
+  def handle_event("draft_reveal", %{"reveal" => %{"reason" => reason}}, socket),
+    do: {:noreply, assign(socket, :reveal_form, reveal_form(reason))}
+
+  def handle_event("confirm_reveal", %{"reveal" => %{"reason" => reason}}, socket) do
+    %{application: application, current_scope: scope, revealing: field} = socket.assigns
+
+    application.country_code
+    |> Fides.Identity.reveal(application.person_id, field, reason, scope.user)
+    |> case do
+      {:ok, %{value: value}} ->
+        {:noreply,
+         socket
+         |> assign(
+           revealed: Map.put(socket.assigns.revealed, field, value),
+           revealing: nil,
+           reveal_form: nil
+         )
+         |> assign(:accesses, accesses(application, scope.user))}
+
+      {:error, %Ash.Error.Forbidden{}} ->
+        {:noreply,
+         socket
+         |> assign(revealing: nil, reveal_form: nil)
+         |> put_flash(:error, "You may not reveal this holder's data.")}
+
+      {:error, error} ->
+        {:noreply, assign(socket, :reveal_form, reveal_form(reason, reveal_errors(error)))}
+    end
+  end
+
+  def handle_event("hide", %{"field" => field}, socket) do
+    revealed =
+      Map.reject(socket.assigns.revealed, fn {name, _} -> Atom.to_string(name) == field end)
+
+    {:noreply, assign(socket, :revealed, revealed)}
+  end
+
   # Choosing a move opens the form for its reason; choosing again changes the move and
   # keeps the reason, and choosing none closes it
-  @impl true
   def handle_event("choose", params, socket) do
     case Enum.find(socket.assigns.moves, &(Atom.to_string(&1) == params["to"])) do
       nil -> {:noreply, assign(socket, move: nil, move_form: nil, conflict?: false)}
@@ -81,6 +143,8 @@ defmodule FidesWeb.ApplicationLive do
         |> assign(
           application: application,
           moves: Fides.Origination.available_moves(application, scope.user),
+          may_reveal?:
+            StaffScope.role(scope, application.country_code) in [:analyst, :risk_manager],
           page_title: "Application #{Format.short_id(application.id)}"
         )
         |> assign(evidence(application, scope.user))
@@ -128,9 +192,25 @@ defmodule FidesWeb.ApplicationLive do
       policies: names(Fides.Risk.list_policy_versions!(tenant: country, actor: actor), :version),
       facts: read!(Fides.Orchestration.case_fact_history(country, id, actor)),
       runs: read!(Fides.Orchestration.agent_runs(country, id, actor)),
+      accesses: accesses(application, actor),
       timeline: id |> Fides.Audit.timeline() |> Enum.reverse()
     }
   end
+
+  defp accesses(application, actor),
+    do: read!(Fides.Identity.pii_accesses(application.country_code, application.person_id, actor))
+
+  defp reveal_form(reason, errors \\ []),
+    do: to_form(%{"reason" => reason}, as: :reveal, errors: errors)
+
+  # The form has one field, so whatever was refused is said next to it
+  defp reveal_errors(%{errors: errors}) when is_list(errors),
+    do: Enum.map(errors, &{:reason, {reveal_message(&1), []}})
+
+  defp reveal_errors(error), do: [reason: {message(error), []}]
+
+  defp reveal_message(%Ash.Error.Changes.Required{}), do: "is required"
+  defp reveal_message(error), do: message(error)
 
   defp read!({:ok, items}), do: items
   defp read!({:error, error}) when is_exception(error), do: raise(error)
@@ -215,6 +295,15 @@ defmodule FidesWeb.ApplicationLive do
         <div class="grid gap-6 xl:grid-cols-3">
           <div class="space-y-6 xl:col-span-2">
             <.terms application={@application} revisions={@revisions} policies={@policies} />
+            <.holder
+              application={@application}
+              revealed={@revealed}
+              revealing={@revealing}
+              form={@reveal_form}
+              may_reveal?={@may_reveal?}
+              accesses={@accesses}
+              user_id={@current_scope.user.id}
+            />
             <.bank_data
               application={@application}
               profiles={@profiles}
@@ -263,11 +352,6 @@ defmodule FidesWeb.ApplicationLive do
           </span>
         </.kv>
         <.kv label="Channel">{@application.channel}</.kv>
-        <.kv label="Holder">
-          <span class="font-mono text-xs" title="The holder's id; their data stays encrypted">
-            {Format.short_id(@application.person_id)}
-          </span>
-        </.kv>
         <.kv label="Policy version">
           {policy(@policies, @application.policy_version_id) || "not evaluated yet"}
         </.kv>
@@ -320,6 +404,107 @@ defmodule FidesWeb.ApplicationLive do
           </tr>
         </tbody>
       </table>
+    </.panel>
+    """
+  end
+
+  attr :application, :map, required: true
+  attr :revealed, :map, required: true
+  attr :revealing, :atom, default: nil
+  attr :form, :any, default: nil
+  attr :may_reveal?, :boolean, required: true
+  attr :accesses, :list, required: true
+  attr :user_id, :string, required: true
+
+  defp holder(assigns) do
+    assigns = assign(assigns, :fields, @personal_fields)
+
+    ~H"""
+    <.panel id="holder">
+      <.panel_header
+        title="Holder"
+        subtitle="Personal data stays encrypted. Revealing a field asks for a reason, and the access log keeps who looked, at what, and why."
+      >
+        <:actions>
+          <span class="font-mono text-xs text-zinc-500 dark:text-zinc-400" title="The holder's id">
+            {Format.short_id(@application.person_id)}
+          </span>
+        </:actions>
+      </.panel_header>
+      <dl class="grid gap-4 px-5 py-4 sm:grid-cols-3">
+        <.kv :for={field <- @fields} id={"holder-#{field}"} label={Format.label(field)}>
+          <%= if Map.has_key?(@revealed, field) do %>
+            <span class="break-all">{@revealed[field]}</span>
+            <button
+              type="button"
+              id={"hide-#{field}"}
+              phx-click="hide"
+              phx-value-field={field}
+              class="ml-2 text-xs text-zinc-500 hover:underline dark:text-zinc-400"
+            >
+              Hide
+            </button>
+          <% else %>
+            <span class="tracking-widest text-zinc-400 dark:text-zinc-500">••••••</span>
+            <button
+              :if={@may_reveal?}
+              type="button"
+              id={"reveal-#{field}"}
+              phx-click="reveal"
+              phx-value-field={field}
+              class="ml-2 text-xs font-medium text-orange-700 hover:underline dark:text-orange-300"
+            >
+              Reveal…
+            </button>
+          <% end %>
+        </.kv>
+      </dl>
+      <.form
+        :if={@revealing}
+        for={@form}
+        id="reveal-form"
+        phx-change="draft_reveal"
+        phx-submit="confirm_reveal"
+        class="mx-5 mb-4 space-y-3 rounded-xl border border-zinc-200 bg-zinc-50/60 p-4 dark:border-zinc-700 dark:bg-zinc-800/40"
+      >
+        <p class="text-sm">
+          Revealing the holder's <strong>{Format.label(@revealing)}</strong>.
+          <span class="text-zinc-500 dark:text-zinc-400">
+            Who, when and why go to the access log.
+          </span>
+        </p>
+        <.field
+          field={@form[:reason]}
+          type="textarea"
+          label="Reason"
+          rows="2"
+          placeholder="Why you need to see it"
+        />
+        <div class="flex flex-wrap gap-2">
+          <.action type="submit" variant="primary" phx-disable-with="Revealing…">
+            Reveal the {Format.label(@revealing)}
+          </.action>
+          <.action type="button" phx-click="reveal">Back</.action>
+        </div>
+      </.form>
+      <div :if={@accesses != []} class="border-t border-zinc-200 dark:border-zinc-800">
+        <h3 class="px-5 pt-4 text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+          Access log
+        </h3>
+        <ul id="pii-accesses" class="divide-y divide-zinc-100 px-5 dark:divide-zinc-800">
+          <li
+            :for={access <- @accesses}
+            id={"access-#{access.id}"}
+            class="flex flex-wrap items-baseline gap-x-3 gap-y-1 py-2.5 text-sm"
+          >
+            <span class="font-medium">{Format.label(access.field)}</span>
+            <span class="text-zinc-600 dark:text-zinc-400">{access.reason}</span>
+            <span class="ml-auto text-xs text-zinc-500 dark:text-zinc-400">
+              {who(access.accessed_by, @user_id)} · {Format.instant(access.accessed_at)}
+            </span>
+          </li>
+        </ul>
+      </div>
     </.panel>
     """
   end
@@ -708,6 +893,9 @@ defmodule FidesWeb.ApplicationLive do
   end
 
   defp policy(policies, id), do: Map.get(policies, id)
+
+  defp who(user_id, user_id), do: "you"
+  defp who(staff_id, _user_id), do: Format.actor("staff_user:" <> staff_id)
 
   defp move_label(:approved), do: "Approve"
   defp move_label(:pending_countersign), do: "Approve, for countersign"
