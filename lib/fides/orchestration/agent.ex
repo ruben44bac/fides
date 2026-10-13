@@ -6,7 +6,8 @@ defmodule Fides.Orchestration.Agent do
 
     * `{:advance, %{to: state, tool: tool, facts: facts}}` proposes moving the
       application to `state`, with what the agent found using `tool`: each fact a
-      name and a map.
+      name and a map. `arguments` go with the move, such as the policy version an
+      evaluation decided with.
     * `{:retry, reason}` asks to run again later, for a failure that may pass.
     * `{:escalate, reason}` hands the case to a person.
 
@@ -18,7 +19,13 @@ defmodule Fides.Orchestration.Agent do
   alias Fides.Orchestration.Assignment
 
   @type proposal ::
-          {:advance, %{to: atom(), tool: String.t(), facts: %{optional(atom()) => map()}}}
+          {:advance,
+           %{
+             required(:to) => atom(),
+             required(:tool) => String.t(),
+             required(:facts) => %{optional(atom()) => map()},
+             optional(:arguments) => map()
+           }}
           | {:retry, String.t()}
           | {:escalate, String.t()}
 

@@ -25,7 +25,8 @@ config :fides, Oban,
     banking_it: 2,
     banking_mx: 2,
     banking_co: 2,
-    banking_br: 2
+    banking_br: 2,
+    risk: 5
   ],
   lifeline: [rescue_after: {2, :hours}],
   pruner: [max_age: {1, :day}],

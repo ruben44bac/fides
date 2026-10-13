@@ -85,7 +85,7 @@ defmodule Fides.Orchestration.Orchestrator do
 
   # The move, the facts and the run commit together, or not at all
   defp confirm_advance(application, agent, %{to: to} = advance, run) do
-    with {:ok, _moved} <- transition(application, to) do
+    with {:ok, _moved} <- transition(application, to, Map.get(advance, :arguments, %{})) do
       for {name, value} <- advance.facts do
         record_fact!(application, agent, advance.tool, name, value)
       end
@@ -95,9 +95,9 @@ defmodule Fides.Orchestration.Orchestrator do
     end
   end
 
-  defp transition(application, to) do
+  defp transition(application, to, arguments \\ %{}) do
     application
-    |> Origination.transition_application(to, application.lock_version, %{},
+    |> Origination.transition_application(to, application.lock_version, arguments,
       tenant: application.country_code,
       actor: @actor
     )
