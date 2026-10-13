@@ -95,6 +95,19 @@ defmodule Fides.Identity do
     end
   end
 
+  @doc "A holder's contact email, for the mail that sends them a notice."
+  @spec holder_email(String.t(), Ecto.UUID.t(), term()) :: {:ok, String.t()} | {:error, term()}
+  def holder_email(country, person_id, actor) do
+    with {:ok, person} <-
+           Ash.get(Fides.Identity.Person, person_id,
+             tenant: country,
+             actor: actor,
+             load: [:email]
+           ) do
+      {:ok, person.email}
+    end
+  end
+
   @doc "Validates a document for a country, against the holder's data when the document encodes it."
   defdelegate validate_document(country, type, document, holder \\ %{}),
     to: Fides.Identity.Documents,

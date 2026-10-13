@@ -61,8 +61,9 @@ defmodule Fides.Identity.Person do
   policies do
     policy action_type(:read) do
       authorize_if Fides.Platform.Checks.SystemActor
-      # Intake checks the holder's document again; Banking asks the provider with it
-      authorize_if {Fides.Platform.Checks.Agent, names: [:intake, :banking]}
+      # Intake checks the holder's document again, Banking asks the provider with it,
+      # and the mail asks for the address a notice goes to
+      authorize_if {Fides.Platform.Checks.Agent, names: [:intake, :banking, :mailer]}
     end
 
     policy action_type(:create) do

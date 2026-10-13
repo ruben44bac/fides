@@ -1,12 +1,15 @@
 defmodule Fides.Notifications do
   @moduledoc """
   Notifications context: what leaves Fides, signed and without personal data, to the
-  systems that subscribed, and what comes in from providers, verified and never
-  applied twice.
+  systems that subscribed and to the applicant, and what comes in from providers,
+  verified and never applied twice.
   """
 
   use Fides.Platform.Domain,
-    boundary: [deps: [Fides.Platform, Fides.Origination], exports: [Signature]]
+    boundary: [
+      deps: [Fides.Platform, Fides.Origination, Fides.Identity, Fides.Countries],
+      exports: [Signature]
+    ]
 
   resources do
     resource Fides.Notifications.InboundEvent do
@@ -29,6 +32,14 @@ defmodule Fides.Notifications do
       define :list_deliveries, action: :read
       define :get_delivery, action: :read, get_by: [:id]
     end
+
+    resource Fides.Notifications.Notification do
+      define :schedule_notification, action: :schedule
+      define :mark_notification_sent, action: :sent
+      define :mark_notification_failed, action: :failed
+      define :list_notifications, action: :read
+      define :get_notification, action: :read, get_by: [:id]
+    end
   end
 
   @doc """
@@ -39,4 +50,10 @@ defmodule Fides.Notifications do
   defdelegate announce(application, event, reason_codes, actor),
     to: Fides.Notifications.Announce,
     as: :run
+
+  @doc "Schedules the applicant's notice about a change, in the language of their country."
+  defdelegate notify(application, template, actor), to: Fides.Notifications.Notify, as: :schedule
+
+  @doc "The language of a country's notices, from its locale."
+  defdelegate language(country), to: Fides.Notifications.Templates
 end

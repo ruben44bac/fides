@@ -70,6 +70,9 @@ defmodule Fides.Orchestration.Step do
   defp run({:webhook, event}, application),
     do: Fides.Notifications.announce(application, event, reason_codes(application), @actor)
 
+  defp run({:notice, template}, application),
+    do: Fides.Notifications.notify(application, template, @actor)
+
   defp run(_not_yet, _application), do: :ok
 
   # The reason codes of the decision that put the application in its state; a person's
