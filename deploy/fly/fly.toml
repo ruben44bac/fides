@@ -1,0 +1,37 @@
+# The hosted demo: one node that serves and takes jobs, deployed by the Release
+# workflow from the image it publishes, with the mocks as a second app on the private
+# network. Secrets are set once by bootstrap.sh.
+app = "fides-demo"
+primary_region = "qro"
+
+[deploy]
+  release_command = "/app/bin/setup"
+
+[env]
+  PHX_HOST = "fides-demo.fly.dev"
+  PORT = "4000"
+  ECTO_IPV6 = "true"
+  POOL_SIZE = "5"
+  # The mocks run as fides-demo-mocks, on the private network; they reach this app
+  # over plain HTTP as fides-demo.internal, which is therefore not redirected to https
+  FIDES_PROVIDERS_URL = "http://fides-demo-mocks.internal:4010"
+  FIDES_WEBHOOK_RECEIVER_URL = "http://fides-demo-mocks.internal:4010/webhooks"
+  FIDES_PLAIN_HTTP_HOSTS = "fides-demo.internal"
+
+[http_service]
+  internal_port = 4000
+  force_https = true
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    interval = "15s"
+    timeout = "5s"
+    grace_period = "30s"
+    method = "GET"
+    path = "/health"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "1gb"

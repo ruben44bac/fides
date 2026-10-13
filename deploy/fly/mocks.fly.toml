@@ -1,0 +1,14 @@
+# The simulated bank providers and the webhook receiver of the hosted demo, on the
+# private network only: Fides reaches them as fides-demo-mocks.internal, and they
+# deliver Mexico's webhooks to fides-demo.internal. Deployed by the Release workflow
+# from the mocks image it publishes; the secrets are set once by bootstrap.sh.
+app = "fides-demo-mocks"
+primary_region = "qro"
+
+[env]
+  MOCKS_PORT = "4010"
+  MOCKS_FIDES_URL = "http://fides-demo.internal:4000"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

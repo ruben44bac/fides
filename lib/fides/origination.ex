@@ -7,7 +7,7 @@ defmodule Fides.Origination do
   use Fides.Platform.Domain,
     boundary: [
       deps: [Fides.Platform, Fides.Identity, Fides.Risk],
-      exports: [TransitionNotAllowed, Lifecycle.Diagram]
+      exports: [TransitionNotAllowed, Lifecycle.Diagram, Seeds]
     ],
     extensions: [AshJsonApi.Domain]
 

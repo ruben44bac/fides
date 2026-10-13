@@ -17,7 +17,10 @@ defmodule Fides.Application do
       {Oban,
        AshOban.config(
          Application.fetch_env!(:fides, :ash_domains),
-         Application.fetch_env!(:fides, Oban)
+         oban_config(
+           Application.get_env(:fides, :role, "all"),
+           Application.fetch_env!(:fides, Oban)
+         )
        )},
       {Phoenix.PubSub, name: Fides.PubSub},
       # Tells the screens of this node about every change to an application
@@ -31,6 +34,14 @@ defmodule Fides.Application do
     opts = [strategy: :one_for_one, name: Fides.Supervisor]
     Supervisor.start_link(children, opts)
   end
+
+  @doc """
+  Oban as the node's role wants it: a web node only enqueues jobs, so it runs no
+  queue and no plugin; a worker, or a node that does both, runs them all.
+  """
+  @spec oban_config(String.t(), keyword()) :: keyword()
+  def oban_config("web", config), do: Keyword.merge(config, queues: false, plugins: false)
+  def oban_config(_worker_or_all, config), do: config
 
   # Tell Phoenix to update the endpoint configuration
   # whenever the application is updated.

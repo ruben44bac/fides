@@ -22,6 +22,10 @@ end
 
 config :fides, FidesWeb.Endpoint, http: [port: String.to_integer(System.get_env("PORT", "4000"))]
 
+# What this node does: "web" serves and only enqueues jobs, "worker" takes the queues
+# and serves nothing, "all" does both, as a single node or in development
+config :fides, :role, System.get_env("FIDES_ROLE", "all")
+
 # A real model for the case brief, named by its ReqLLM spec; its provider's key comes
 # from the environment as ReqLLM expects. Without it, the simulated model answers.
 if spec = System.get_env("FIDES_LLM_MODEL") do
@@ -101,9 +105,28 @@ if config_env() == :prod do
   config :fides, Fides.Banking.Callback,
     secret: System.fetch_env!("FIDES_PROVIDER_WEBHOOK_SECRET")
 
+  # A demo environment registers the simulated receiver when the seeds run
+  if receiver_url = System.get_env("FIDES_WEBHOOK_RECEIVER_URL") do
+    config :fides, Fides.Notifications.Seeds,
+      receiver_url: receiver_url,
+      receiver_secret: System.fetch_env!("FIDES_WEBHOOK_RECEIVER_SECRET")
+  end
+
+  # A hosted demo has demo staff, with TOTP secrets derived from this phrase as in
+  # development; production leaves it unset and has none
+  if demo_seed = System.get_env("FIDES_DEMO_TOTP_SEED") do
+    config :fides, Fides.Accounts.Demo, totp_seed: :crypto.hash(:sha256, demo_seed)
+  end
+
   host = System.get_env("PHX_HOST") || "example.com"
 
   config :fides, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
+
+  # Hosts answered over plain HTTP where no proxy terminates TLS: the service name the
+  # mocks call inside compose or a cluster
+  config :fides,
+         :plain_http_hosts,
+         "FIDES_PLAIN_HTTP_HOSTS" |> System.get_env("") |> String.split(",", trim: true)
 
   config :fides, FidesWeb.Endpoint,
     url: [host: host, port: 443, scheme: "https"],

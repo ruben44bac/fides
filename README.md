@@ -12,9 +12,10 @@ Built with Elixir 1.20, Phoenix 1.8, Ash 3, Oban and PostgreSQL 18.
 | Six countries: documents, providers, rules and life cycles | Done |
 | Background agents, orchestrated from a Postgres trigger | Done |
 | Signed webhooks in (Mexico's provider) and out (subscribed receivers) | Done |
-| Back office: sign-in, live inbox, an application's detail with its evidence, moves, personal data revealed with a reason, and new applications | Done |
-| Makefile and one-command run | Done |
-| Cache, the LLM case brief, JSON logs, the container image and the Kubernetes manifests | Not in this delivery: see [Out of scope](#out-of-scope-and-why) |
+| Back office: sign-in, live inbox, an application's detail with its evidence, moves, personal data revealed with a reason, new applications, answers and reapplications, policy versions and the console | Done |
+| The AI case brief for analysts, with guardrails and a simulated model by default | Done |
+| `make run` with Docker alone, `make demo` with the three scenarios, the container image, compose and the Kubernetes manifests | Done |
+| Cache and structured JSON logs | Not in this delivery: see [Out of scope](#out-of-scope-and-why) |
 
 ## Contents
 
@@ -40,30 +41,32 @@ Built with Elixir 1.20, Phoenix 1.8, Ash 3, Oban and PostgreSQL 18.
 
 ## Run it
 
-You need Docker, for PostgreSQL, and Elixir 1.20 with Erlang/OTP 29.
+You need Docker. Elixir 1.20 with Erlang/OTP 29 is needed only to develop from the host.
 
 ```sh
-make run      # PostgreSQL 18, then Fides on :4000 and the simulated providers on :4010;
-              # the first run installs the dependencies, migrates and seeds the demo data
-make test     # the whole suite
-make migrate  # the migrations, triggers included
-make seed     # the reference data, the life cycles and the demo staff, again
+make run      # PostgreSQL 18, the migrations and seeds, a web node on :4000, a worker and the
+              # simulated providers on :4010, all from their images; the first run builds them
+make demo     # the three scripted scenarios against the running app, followed state by state
 make code     # a demo staff user's current TOTP code, to sign in to the back office
-make token    # a bearer token for a demo staff user, while Fides runs
-make deploy   # the Kubernetes manifests, once they exist (see Deployment)
+make logs     # Fides and the mocks, live
+make down     # stop everything; the database's volume stays
+make deploy   # the Kubernetes manifests, on the current kubectl context (see Deployment)
 make          # every target, with what it does
 ```
 
-`make code` and `make token` take `STAFF=analyst_mx` for another demo user. The same steps without make:
+`make run` writes development keys to `deploy/compose.env` the first time. The first run builds the two images, which takes a few minutes; `FIDES_IMAGE=ghcr.io/ruben44bac/fides:main make run` pulls the published one instead. `make code` and `make demo` take `STAFF=analyst_mx` for another demo user, and `LOCAL=1` runs them from the host.
+
+From the host, with the toolchain installed:
 
 ```sh
-docker compose -f deploy/compose.yml up -d --wait   # PostgreSQL 18 on port 5434
-mix setup                                            # dependencies, database, seeds and demo staff
-(cd mocks && mix deps.get && mix run --no-halt) &    # simulated providers and webhook receiver on :4010
-mix phx.server                                       # Fides on :4000
+LOCAL=1 make run   # PostgreSQL in Docker; Fides and the mocks with mix, hot reloading included
+make test          # the whole suite
+make migrate       # the migrations, triggers included
+make seed          # the reference data, the life cycles and the demo staff, again
+make token         # a bearer token for a demo staff user, while Fides runs
 ```
 
-Nothing needs an external credential: the bank providers and the webhook receiver are simulated by the `mocks` app, and every development key has a default. `.env.example` lists every variable, and which ones production requires.
+Nothing needs an external credential: the bank providers and the webhook receiver are simulated by the `mocks` app, and every development key has a default or is generated. `.env.example` lists the variables, and which ones production requires.
 
 **Demo staff:** all of them share the password `fides demo password`, and each has a TOTP second factor: `make code` prints the current code, and `make token` signs in with it.
 
@@ -80,7 +83,7 @@ Nothing needs an external credential: the bank providers and the webhook receive
 - API explorer: <http://localhost:4000/api/swaggerui>, and the OpenAPI document at `/api/open_api`.
 - Webhooks the simulated receiver got: <http://localhost:4010/webhooks/page>.
 - Emails sent to applicants, in development: <http://localhost:4000/dev/mailbox>.
-- Back office: <http://localhost:4000/backoffice>. Sign in with a demo user's email, the shared password and the code from `make code`.
+- Back office: <http://localhost:4000/backoffice>. Sign in with a demo user's email, the shared password and the code from `make code`: the inbox, each application's detail, the policies and the console.
 
 A Postman collection in `postman/` walks through every endpoint, signs in with the TOTP codes, and follows the orchestrator.
 
@@ -156,6 +159,7 @@ flowchart LR
     banking["Banking agent"]
     risk["Risk agent<br/>pure engine"]
     notifier["Notifier"]
+    brief["Case brief<br/>a model, behind guardrails"]
   end
   subgraph external["Simulated externals: the mocks app"]
     providers["Six bank providers<br/>JSON, XML, 202 and webhook"]
@@ -176,6 +180,8 @@ flowchart LR
   risk -- "risk.evaluate" --> memory
   step -- "confirms proposals" --> apps
   notifier -- "signed webhook" --> receiver
+  step -- "on entering review" --> brief
+  brief -- "ai_runs" --> memory
 ```
 
 ### The flow of an application
@@ -263,7 +269,7 @@ Each agent can then have the least data it needs, enforced by its identity's pol
 
 **No LLM is in the decision path.** The orchestrator and every agent above are deterministic code. A credit decision is never made, changed or explained to the applicant by a model.
 
-**No LLM runs in this delivery.** The life cycle declares a `case_brief` capability on entering review. That is the one place where an LLM would assist a person: a brief for the analyst that summarizes the pseudonymized facts and the rules that failed. It would run with a simulated model by default, so nothing needs a key, fall back to a template when the model fails, and never change a state. It is declared but not wired yet (see [Out of scope](#out-of-scope-and-why)).
+**Where a model helps: the case brief.** When an application enters review, the life cycle names the `case_brief` capability and the orchestrator enqueues it, in the AI's own queue and with the AI's own identity. The model gets the pseudonymized facts alone, the terms, the decision with what every rule said and the canonical inputs, financial and public data only, and answers a summary and the signals the analyst should look at first, as structured output. Guardrails check it before it is shown: the shape, every number backed by the input, every rule that objected mentioned, nothing that looks like personal data. A refused answer is asked for once more with the refusal; after that, or when the model fails, a template written from the same facts stands in. Every invocation leaves an `AiRun` with the model, the hashes of prompt and input, the output, the guardrails' verdict, tokens, cost and latency. The simulated model answers by default, free and offline; `FIDES_LLM_MODEL` with the provider's key names a real one through ReqLLM. The AI reads applications, decisions and facts, the holder does not exist for it, and it may move nothing: the brief assists, the analyst decides.
 
 **Reproducible.**
 - The engine is a pure function: rule logic is code, and thresholds are parameters of a versioned policy.
@@ -342,7 +348,7 @@ The base states are `submitted`, `validating`, `awaiting_bank_data`, `evaluating
 - **Code defines, the database enforces.** The seeds write each country's states and transitions to `lifecycle_states` and `lifecycle_transitions`. A foreign key keeps every application in a state of its country, and a trigger rejects any change of state that is not one of its country's transitions, raw SQL included.
 - **Extending it.** A new state or country is a change to a variant module and its seeds. The base cycle and the other countries stay as they are.
 
-What runs on entering each state is declared next to the cycle. An effect whose piece does not exist yet is declared and waits; the step runs it once it does.
+What runs on entering each state is declared next to the cycle. A capability runs where the configuration says, so the life cycle names it without the orchestrator depending on what runs it; a queue effect is the inbox filtered by that state.
 
 | State | Effect | Runs today |
 | --- | --- | --- |
@@ -351,9 +357,9 @@ What runs on entering each state is declared next to the cycle. An effect whose 
 | `awaiting_bank_data` | Banking agent | Yes |
 | `awaiting_bank_callback` | Timeout for the provider's webhook | Yes |
 | `evaluating` | Risk agent | Yes |
-| `in_review` | Review queue and the case brief | Declared |
-| `provider_error` | Scheduled retry, and an alert on the console | The retry |
-| `pending_countersign` | The risk managers' queue | Declared |
+| `in_review` | Review queue and the case brief | The brief; the queue is the inbox |
+| `provider_error` | Scheduled retry, and an alert on the console | Yes |
+| `pending_countersign` | The risk managers' queue | The inbox, filtered |
 | `info_requested`, `approved`, `rejected` | Signed webhook and a notice to the applicant | Yes |
 
 ## Asynchronous processing, webhooks and concurrency
@@ -371,6 +377,7 @@ What runs on entering each state is declared next to the cycle. An effect whose 
 | `reevaluation` | 1 |
 | `webhooks` | 5 |
 | `notices` | 5 |
+| `ai` | 2 |
 
 **Webhooks.**
 - **Inbound:** Mexico's provider answers 202 and delivers the profile later to `POST /webhooks/providers/MX`. The signature is `t=<unix seconds>,v1=<HMAC-SHA256 of "<seconds>.<body>">`, refused if older than 5 minutes. Each event applies once.
@@ -438,7 +445,7 @@ erDiagram
 - **Authorization.**
   - Ash policies on every action, by role (analyst, risk manager, admin, auditor) and by country scope.
   - The auditor reads every country and writes nothing.
-  - Agents act with their own identity and only their tools.
+  - Agents act with their own identity and only their tools; the AI's capability reads applications, decisions and facts, never a holder, and may move nothing.
 - **Separation of duties.** Publishing a policy needs a second risk manager, and the database checks it too. In countries with a countersignature, a large approval needs a risk manager besides the analyst.
 - **Personal and bank data.** See the third question above: classification, encryption, blind index, masking, hashes instead of payloads, and no personal data in events or logs. In the back office, revealing a holder's personal data needs a reason, and every reveal is logged with who, what and why.
 - **Integrity.**
@@ -462,7 +469,7 @@ What happened to any application, in any asynchronous flow, can be rebuilt from 
 | Every webhook sent, its attempts and status | `webhook_deliveries` |
 | Every decision and everything it depended on | `decision_records` |
 
-Logs are plain text with the request id, and they filter credentials and emails. Structured JSON logs are not in this delivery. In development, LiveDashboard (`/dev/dashboard`) shows the BEAM, Phoenix and Oban metrics.
+The console in the back office shows the operation as it is: the depth of every queue, each provider's recent calls with the applications waiting in provider error, and the webhook deliveries that failed every attempt, to send again. Logs are plain text with the request id, and they filter credentials and emails. Structured JSON logs are not in this delivery. In development, LiveDashboard (`/dev/dashboard`) shows the BEAM, Phoenix and Oban metrics.
 
 ## Scalability
 
@@ -509,17 +516,12 @@ There is no Redis: local caches add no service to the five-minute start, and bot
 
 ## Deployment
 
-**Not in this delivery:** the container image and the Kubernetes manifests. `make deploy` applies `deploy/k8s/overlays/local` once it exists, and fails with a clear message until then. This is the target topology:
+One image serves every environment ([`deploy/README.md`](deploy/README.md)), built from [`deploy/Dockerfile`](deploy/Dockerfile) and published to GHCR by the Release workflow on every merge to `main`. What differs between environments is only how it is run:
 
-- **One image, two roles.** `ROLE=web` serves the API, the back office and inbound webhooks, without queues. `ROLE=worker` runs every queue and is the only one that calls providers.
-- **Kubernetes** (`deploy/k8s`, kustomize), with a base and a local overlay for kind (`make deploy`):
-  - web: Deployment, Service, HPA, and probes on `/health`;
-  - worker: Deployment, scaled on the depth of `oban_jobs`;
-  - the migrations as a Job;
-  - PostgreSQL for the demo as a StatefulSet;
-  - the mocks;
-  - NetworkPolicies, so only workers reach the providers.
-- **Hosted demo.** The same image would run on Fly.io.
+- **One image, two roles.** `FIDES_ROLE=web` serves the API, the back office and inbound webhooks, and enqueues jobs without running any. `FIDES_ROLE=worker` runs every queue and is the only one that calls providers. The default, `all`, does both on one node. `/app/bin/setup` creates the database if missing, migrates and seeds; `GET /health` answers while the database does.
+- **Docker alone.** [`deploy/compose.yml`](deploy/compose.yml) runs PostgreSQL and, under the `app` profile, the migrations, a web node, a worker and the mocks: that is `make run`.
+- **Kubernetes** ([`deploy/k8s`](deploy/k8s/README.md), kustomize): a base with the web Deployment, Service and HPA, the worker Deployment, the migrations as a Job that removes itself once done, PostgreSQL for a demo as a StatefulSet, the mocks, and a NetworkPolicy so only workers reach the providers; and a local overlay for kind with the images built on this machine, applied with `make deploy`.
+- **Hosted demo.** [`deploy/fly`](deploy/fly/README.md) runs the same image on Fly.io, deployed by the Release workflow.
 
 ## Key decisions
 
@@ -540,6 +542,7 @@ There is no Redis: local caches add no service to the five-minute start, and bot
 | No physical partitioning in the MVP | Carbonite resolves triggers by table name; country lives in domain, indexes and policies |
 | No row-level security in the MVP | Ash policies already filter in SQL; RLS on reads would force a transaction per request |
 | Local caches, no Redis | No extra service in the five-minute start |
+| The life cycle names capabilities; the configuration says what runs them | The orchestrator depends on no AI code, and a capability nobody runs waits |
 
 ## Assumptions
 
@@ -580,14 +583,12 @@ A missing field answers 422 and names the field.
 | Per-country physical partitioning, row-level security, crypto-shredding and pgaudit | Each costs more than it shows at this size; see Key decisions |
 | A generator for new countries | A new country is a variant module, a validator, an adapter, a policy and seeds |
 
-**Required, but not in this delivery.** The time went to the end-to-end flow, the evidence behind it and the back office:
+**Required, but not in this delivery.** The time went to the end-to-end flow, the evidence behind it, the back office and the delivery itself:
 
 | Missing | State |
 | --- | --- |
 | Cache | Designed (see [Cache](#cache)), not implemented |
-| The LLM case brief | Declared in the life cycle on entering review, not wired; no LLM runs today |
 | Structured JSON logs | Logs are plain text with the request id; the evidence tables rebuild any flow |
-| Container image and Kubernetes manifests | Topology designed (see [Deployment](#deployment)); `make run` runs everything locally |
 
 ## Repository map and tests
 
@@ -602,15 +603,18 @@ lib/fides/
   risk/           pure engine, policies per country, policy versions, decision records
   orchestration/  steps, orchestrator, agents, facts, runs, reevaluation
   notifications/  signed webhooks in and out, notices to applicants
+  ai/             the case brief: models, guardrails, template, runs
+  demo.ex         the three scripted scenarios, run through the API
+  release.ex      what a release does without Mix: migrate, seed, demo
 lib/fides_web/    API, provider webhooks, back office (LiveView)
-mocks/            simulated bank providers and webhook receiver (separate Mix app)
+mocks/            simulated bank providers and webhook receiver (separate Mix app, with its image)
 postman/          collection that walks through the API
 priv/generated/   data inventory and life cycles, generated from the code
-deploy/           compose, for PostgreSQL
+deploy/           the image, compose, the Kubernetes manifests and the hosted demo
 Makefile          the frequent tasks
 ```
 
-The suite has over 340 tests and properties:
+The suite has over 430 tests and properties:
 - property tests for every document validator and every country's rule;
 - metamorphic properties for the engine: raising the observed income never worsens a decision, and raising the amount never improves it;
 - stateful tests of random command sequences against the invariants;

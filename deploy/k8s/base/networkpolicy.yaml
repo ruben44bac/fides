@@ -1,0 +1,19 @@
+# Only the workers call the bank providers and the webhook receiver; the web nodes
+# never do, and nothing else in the cluster reaches the mocks
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: providers-from-workers
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: mocks
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: fides
+              app.kubernetes.io/component: worker
+      ports:
+        - port: 4010

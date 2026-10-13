@@ -1,0 +1,53 @@
+# The six simulated bank providers and the webhook receiver, for demos
+apiVersion: v1
+kind: Service
+metadata:
+  name: mocks
+spec:
+  selector:
+    app.kubernetes.io/name: mocks
+  ports:
+    - name: http
+      port: 4010
+      targetPort: 4010
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mocks
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mocks
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: mocks
+    spec:
+      containers:
+        - name: mocks
+          image: fides-mocks
+          env:
+            - name: MOCKS_PORT
+              value: "4010"
+            - name: MOCKS_FIDES_URL
+              value: http://web:4000
+            - name: MOCKS_WEBHOOK_SECRET
+              value: fides development provider webhook secret
+            - name: MOCKS_RECEIVER_SECRET
+              value: fides development webhook receiver secret
+          ports:
+            - name: http
+              containerPort: 4010
+          readinessProbe:
+            httpGet:
+              path: /webhooks
+              port: http
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              memory: 256Mi

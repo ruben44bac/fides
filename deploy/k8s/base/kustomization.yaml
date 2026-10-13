@@ -1,0 +1,28 @@
+# The base every environment shares: one image in two roles, the migrations as a job,
+# PostgreSQL for a demo, the simulated providers, and the network policy that keeps
+# the providers to the workers. An overlay sets the namespace, the images, the keys
+# and how the web service is reached.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+labels:
+  - includeSelectors: false
+    pairs:
+      app.kubernetes.io/part-of: fides
+
+resources:
+  - configmap.yaml
+  - postgres.yaml
+  - migrate.yaml
+  - web.yaml
+  - worker.yaml
+  - mocks.yaml
+  - networkpolicy.yaml
+
+images:
+  - name: fides
+    newName: ghcr.io/ruben44bac/fides
+    newTag: main
+  - name: fides-mocks
+    newName: ghcr.io/ruben44bac/fides-mocks
+    newTag: main

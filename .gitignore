@@ -46,3 +46,7 @@ npm-debug.log
 
 # The local environment, copied from .env.example
 /.env
+
+# The development keys make run and make deploy generate
+/deploy/compose.env
+/deploy/k8s/overlays/*/keys.env

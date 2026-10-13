@@ -1,0 +1,20 @@
+# What every Fides node reads from the environment, besides the keys in the fides-keys
+# secret an overlay generates (see deploy/README.md for each variable)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fides-env
+data:
+  DATABASE_URL: ecto://postgres:postgres@postgres:5432/fides
+  PHX_HOST: localhost
+  PORT: "4000"
+  POOL_SIZE: "10"
+  # The mocks call the web service over plain HTTP inside the cluster
+  FIDES_PLAIN_HTTP_HOSTS: web
+  FIDES_PROVIDERS_URL: http://mocks:4010
+  FIDES_PROVIDER_WEBHOOK_SECRET: fides development provider webhook secret
+  FIDES_WEBHOOK_RECEIVER_URL: http://mocks:4010/webhooks
+  FIDES_WEBHOOK_RECEIVER_SECRET: fides development webhook receiver secret
+  # The demo staff exist; a production overlay removes this key
+  FIDES_DEMO_TOTP_SEED: fides development totp seed
+  FIDES_LLM_MODEL: ""
