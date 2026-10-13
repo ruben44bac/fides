@@ -48,6 +48,24 @@ defmodule Fides.Risk do
   @doc "The parameters of a country's first policy version."
   defdelegate default_params(country), to: Fides.Risk.Engine
 
+  @doc "The names of a country's thresholds: the common ones first, then the country's own."
+  defdelegate param_names(country), to: Fides.Risk.Engine
+
+  @doc "The names of the thresholds of the rules every country applies."
+  defdelegate common_param_names(), to: Fides.Risk.Engine
+
+  @doc """
+  A country's policy versions, newest first, each with how many decisions it made and
+  how many of them were reevaluations.
+  """
+  @spec policy_versions(String.t(), term()) :: {:ok, [struct()]} | {:error, term()}
+  def policy_versions(country, actor) do
+    Fides.Risk.PolicyVersion
+    |> Ash.Query.sort(version: :desc)
+    |> Ash.Query.load([:decisions_count, :reevaluations_count])
+    |> Ash.read(tenant: country, actor: actor)
+  end
+
   @doc "Checks a policy's parameters for a country, with atom keys once valid."
   defdelegate cast_params(country, params), to: Fides.Risk.Engine
 

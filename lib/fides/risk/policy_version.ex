@@ -207,6 +207,20 @@ defmodule Fides.Risk.PolicyVersion do
     attribute :updated_at, :public
   end
 
+  relationships do
+    has_many :decisions, Fides.Risk.DecisionRecord do
+      destination_attribute :policy_version_id
+    end
+  end
+
+  aggregates do
+    count :decisions_count, :decisions
+
+    count :reevaluations_count, :decisions do
+      filter expr(cause == :reevaluation)
+    end
+  end
+
   identities do
     identity :unique_version, [:version]
     identity :in_force, [:status], where: expr(status == :published)
