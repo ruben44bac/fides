@@ -1,0 +1,11 @@
+# A kind cluster whose node ports 30400 and 30410 answer on localhost:
+#   kind create cluster --name fides --config deploy/k8s/overlays/local/kind.yaml
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      - containerPort: 30400
+        hostPort: 30400
+      - containerPort: 30410
+        hostPort: 30410

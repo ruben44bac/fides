@@ -12,7 +12,7 @@ K8S_OVERLAY ?= deploy/k8s/overlays/local
 CODE_SHA := $(shell git rev-parse HEAD 2>/dev/null || echo unknown)
 
 .DEFAULT_GOAL := help
-.PHONY: help run keys urls logs down setup db server mocks migrate seed reset test precommit lint docs token code demo deploy
+.PHONY: help run keys urls logs down setup db server mocks migrate seed reset test precommit lint docs token code demo deploy k8s-keys
 
 help: ## List the targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-z][a-z-]*:.*## / {printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -112,4 +112,12 @@ endif
 
 deploy: ## Apply the Kubernetes manifests to the current kubectl context (K8S_OVERLAY=deploy/k8s/overlays/local)
 	@test -d $(K8S_OVERLAY) || { echo "No Kubernetes manifests at $(K8S_OVERLAY)"; exit 1; }
+	@test -f $(K8S_OVERLAY)/keys.env || $(MAKE) --no-print-directory k8s-keys
 	kubectl apply -k $(K8S_OVERLAY)
+
+k8s-keys: ## Write the keys the overlay's secret takes, once, to $(K8S_OVERLAY)/keys.env
+	@test -f $(K8S_OVERLAY)/keys.env && echo "$(K8S_OVERLAY)/keys.env already exists" || { \
+	  printf 'SECRET_KEY_BASE=%s\nFIDES_ENCRYPTION_KEY=%s\nFIDES_BLIND_INDEX_KEY=%s\nFIDES_STAFF_TOKEN_KEY=%s\n' \
+	    "$$(openssl rand -base64 64 | tr -d '\n')" "$$(openssl rand -base64 32)" \
+	    "$$(openssl rand -base64 32)" "$$(openssl rand -base64 32)" > $(K8S_OVERLAY)/keys.env; \
+	  echo "wrote $(K8S_OVERLAY)/keys.env"; }
