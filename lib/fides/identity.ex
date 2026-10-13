@@ -187,6 +187,12 @@ defmodule Fides.Identity do
   @doc "Whether someone born on `birth_date` is an adult on `today`."
   defdelegate adult?(birth_date, today), to: Fides.Identity.Documents
 
+  @doc "The holder's data, besides their names, a document type is checked against."
+  defdelegate holder_data_needed(country, type), to: Fides.Identity.Documents
+
+  @doc "The version of the consent text holders are shown now."
+  defdelegate consent_text_version(), to: Fides.Identity.Consent, as: :current_text_version
+
   @name_parts %{
     "given_names" => :given_names,
     "first_surname" => :first_surname,

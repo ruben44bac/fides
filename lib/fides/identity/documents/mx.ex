@@ -40,6 +40,9 @@ defmodule Fides.Identity.Documents.MX do
   def document_types, do: ["CURP"]
 
   @impl true
+  def needs("CURP"), do: [:birth_date]
+
+  @impl true
   def validate("CURP", document, holder) do
     with :ok <- format(document),
          :ok <- check(document),

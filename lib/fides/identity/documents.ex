@@ -85,6 +85,20 @@ defmodule Fides.Identity.Documents do
     end
   end
 
+  @doc "The holder's data, besides their names, a document type is checked against."
+  @spec holder_data_needed(String.t(), String.t()) :: [:birth_date | :sex]
+  def holder_data_needed(country, type) do
+    case validator(country) do
+      {:ok, validator} ->
+        if type in validator.document_types() and function_exported?(validator, :needs, 1),
+          do: validator.needs(type),
+          else: []
+
+      {:error, _reasons} ->
+        []
+    end
+  end
+
   @doc "Whether someone born on `birth_date` is at least 18 years old on `today`."
   @spec adult?(Date.t(), Date.t()) :: boolean()
   def adult?(%Date{} = birth_date, %Date{} = today) do

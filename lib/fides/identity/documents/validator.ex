@@ -30,5 +30,11 @@ defmodule Fides.Identity.Documents.Validator do
               optional(:sex) => :female | :male | nil
             }
 
-  @optional_callbacks encoded: 2
+  @doc """
+  The holder's data, besides their names, a document type is checked against, so a
+  form can ask for it. Only countries whose documents encode such data implement it.
+  """
+  @callback needs(type :: String.t()) :: [:birth_date | :sex]
+
+  @optional_callbacks encoded: 2, needs: 1
 end
