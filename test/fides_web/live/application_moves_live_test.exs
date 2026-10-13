@@ -167,7 +167,7 @@ defmodule FidesWeb.ApplicationLiveMovesTest do
 
     # Read again: the application is waiting for information, so a rejection is no
     # longer possible, and the reason is still there to copy or rewrite
-    view |> element("#reload-application") |> render_click()
+    view |> element("#move-conflict-reload") |> render_click()
     assert has_element?(view, "#application-state", "info requested")
     assert has_element?(view, "#move-error", "no longer possible")
     assert has_element?(view, "#move-form textarea", "Fraud suspected.")

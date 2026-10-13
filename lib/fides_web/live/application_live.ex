@@ -13,16 +13,22 @@ defmodule FidesWeb.ApplicationLive do
   The holder's personal data stays hidden. The staff of the holder's country reveal one
   field at a time, for a reason that goes to the access log with who looked and when;
   what was revealed lives only on this screen, until hidden or left.
+
+  An analyst also answers a request for information on the holder's behalf, with the
+  corrected terms that become the next revision, and retries a rejected or cancelled
+  application as a new one of the same holder, once.
   """
 
   use FidesWeb, :live_view
 
   alias Fides.Origination.TransitionNotAllowed
   alias Fides.Platform.ChangeListener
+  alias FidesWeb.ApplicationForm
   alias FidesWeb.Format
   alias FidesWeb.StaffScope
 
   @personal_fields [:name, :document, :email]
+  @terms_fields [:amount, :monthly_income, :consent]
 
   @impl true
   def mount(_params, _session, socket) do
@@ -34,7 +40,12 @@ defmodule FidesWeb.ApplicationLive do
        conflict?: false,
        revealed: %{},
        revealing: nil,
-       reveal_form: nil
+       reveal_form: nil,
+       answering?: false,
+       answer_form: nil,
+       reapplying?: false,
+       reapply_form: nil,
+       consent_version: Fides.Identity.consent_text_version()
      )}
   end
 
@@ -123,6 +134,82 @@ defmodule FidesWeb.ApplicationLive do
   def handle_event("reload", _params, socket),
     do: {:noreply, socket |> assign(:conflict?, false) |> load(socket.assigns.application.id)}
 
+  # The holder answered a request for information: the analyst enters the corrected
+  # terms, which become the next revision
+  def handle_event("answer", %{"open" => _open}, socket),
+    do: {:noreply, assign(socket, answering?: true, answer_form: terms_form(:answer, %{}))}
+
+  def handle_event("answer", _params, socket),
+    do: {:noreply, assign(socket, answering?: false, answer_form: nil, conflict?: false)}
+
+  def handle_event("draft_answer", %{"answer" => params}, socket),
+    do: {:noreply, assign(socket, :answer_form, terms_form(:answer, params))}
+
+  def handle_event("confirm_answer", %{"answer" => params}, socket) do
+    %{application: application, current_scope: scope} = socket.assigns
+
+    with {:ok, terms} <- ApplicationForm.terms(params),
+         {:ok, answered} <-
+           Fides.Origination.answer_information_request(
+             application,
+             Map.put(terms, :expected_version, application.lock_version),
+             tenant: application.country_code,
+             actor: scope.user
+           ) do
+      {:noreply,
+       socket
+       |> assign(answering?: false, answer_form: nil, conflict?: false)
+       |> put_flash(:info, "Answered: revision #{answered.revision} is now current.")
+       |> load(application.id)}
+    else
+      {:error, errors} when is_list(errors) ->
+        {:noreply, assign(socket, :answer_form, terms_form(:answer, params, errors))}
+
+      {:error, error} ->
+        {:noreply, refused_terms(socket, :answer_form, :answer, params, error)}
+    end
+  end
+
+  # A rejected or cancelled application is retried as a new one of the same holder
+  def handle_event("reapply", %{"open" => _open}, socket) do
+    {:noreply,
+     assign(socket,
+       reapplying?: true,
+       reapply_form: terms_form(:reapply, %{"consent" => "false"})
+     )}
+  end
+
+  def handle_event("reapply", _params, socket),
+    do: {:noreply, assign(socket, reapplying?: false, reapply_form: nil)}
+
+  def handle_event("draft_reapply", %{"reapply" => params}, socket),
+    do: {:noreply, assign(socket, :reapply_form, terms_form(:reapply, params))}
+
+  def handle_event("confirm_reapply", %{"reapply" => params}, socket) do
+    %{application: application, current_scope: scope, consent_version: version} = socket.assigns
+
+    with {:ok, terms} <- reapply_terms(params),
+         {:ok, retry} <-
+           terms
+           |> Map.merge(%{
+             previous_application_id: application.id,
+             channel: :form,
+             consent_text_version: version
+           })
+           |> Fides.Origination.reapply(tenant: application.country_code, actor: scope.user) do
+      {:noreply,
+       socket
+       |> put_flash(:info, "Reapplied: this is the holder's new application.")
+       |> push_navigate(to: ~p"/backoffice/applications/#{retry.id}")}
+    else
+      {:error, errors} when is_list(errors) ->
+        {:noreply, assign(socket, :reapply_form, terms_form(:reapply, params, errors))}
+
+      {:error, error} ->
+        {:noreply, refused_terms(socket, :reapply_form, :reapply, params, error)}
+    end
+  end
+
   # The application itself changed: everything is read again
   @impl true
   def handle_info(
@@ -138,13 +225,16 @@ defmodule FidesWeb.ApplicationLive do
 
     case Fides.Origination.find_application(id, actor: scope.user) do
       {:ok, %{} = application} ->
+        role = StaffScope.role(scope, application.country_code)
+
         socket
         |> subscribe(application.country_code)
         |> assign(
           application: application,
           moves: Fides.Origination.available_moves(application, scope.user),
-          may_reveal?:
-            StaffScope.role(scope, application.country_code) in [:analyst, :risk_manager],
+          may_reveal?: role in [:analyst, :risk_manager],
+          may_answer?: role == :analyst and application.state == :info_requested,
+          may_reapply?: role == :analyst and application.state in [:rejected, :cancelled],
           page_title: "Application #{Format.short_id(application.id)}"
         )
         |> assign(evidence(application, scope.user))
@@ -193,8 +283,55 @@ defmodule FidesWeb.ApplicationLive do
       facts: read!(Fides.Orchestration.case_fact_history(country, id, actor)),
       runs: read!(Fides.Orchestration.agent_runs(country, id, actor)),
       accesses: accesses(application, actor),
+      retry: read!(Fides.Origination.retry_of(country, id, actor)),
       timeline: id |> Fides.Audit.timeline() |> Enum.reverse()
     }
+  end
+
+  defp terms_form(as, params, errors \\ []), do: to_form(params, as: as, errors: errors)
+
+  # The terms and the consent, checked together so every error shows at once
+  defp reapply_terms(params) do
+    case {ApplicationForm.terms(params), consent_errors(params)} do
+      {{:ok, terms}, []} -> {:ok, terms}
+      {{:ok, _terms}, errors} -> {:error, errors}
+      {{:error, errors}, more} -> {:error, errors ++ more}
+    end
+  end
+
+  defp consent_errors(%{"consent" => "true"}), do: []
+  defp consent_errors(_params), do: [consent: {"must be confirmed", []}]
+
+  # Terms the action refused: a stale version offers to read the application again,
+  # keeping what was typed; anything else shows next to its field, or above the form
+  # when it names none
+  defp refused_terms(socket, key, as, params, %Ash.Error.Forbidden{}),
+    do: assign(socket, key, terms_form(as, params, holder: {"is not yours to act for", []}))
+
+  defp refused_terms(socket, key, as, params, %{errors: errors} = error) when is_list(errors) do
+    if Enum.any?(errors, &match?(%Ash.Error.Changes.StaleRecord{}, &1)) do
+      socket |> assign(:conflict?, true) |> assign(key, terms_form(as, params))
+    else
+      assign(socket, key, terms_form(as, params, ApplicationForm.errors_from(error)))
+    end
+  end
+
+  defp refused_terms(socket, key, as, params, error),
+    do: assign(socket, key, terms_form(as, params, ApplicationForm.errors_from(error)))
+
+  # What a terms form says above its fields: the errors that name none of them
+  defp general_errors(form) do
+    for {field, error} <- form.errors, field not in @terms_fields, do: general(field, error)
+  end
+
+  defp general(:holder, error), do: "The holder " <> translate_error(error) <> "."
+
+  defp general(:previous_application_id, error),
+    do: "This application " <> translate_error(error) <> "."
+
+  defp general(_field, error) do
+    text = translate_error(error)
+    String.upcase(String.first(text)) <> String.slice(text, 1..-1//1) <> "."
   end
 
   defp accesses(application, actor),
@@ -320,6 +457,14 @@ defmodule FidesWeb.ApplicationLive do
               move={@move}
               form={@move_form}
               conflict?={@conflict?}
+              may_answer?={@may_answer?}
+              answering?={@answering?}
+              answer_form={@answer_form}
+              may_reapply?={@may_reapply?}
+              reapplying?={@reapplying?}
+              reapply_form={@reapply_form}
+              retry={@retry}
+              consent_version={@consent_version}
             />
             <.timeline entries={@timeline} currency={@application.currency} />
           </div>
@@ -778,16 +923,52 @@ defmodule FidesWeb.ApplicationLive do
   attr :move, :atom, default: nil
   attr :form, :any, default: nil
   attr :conflict?, :boolean, default: false
+  attr :may_answer?, :boolean, default: false
+  attr :answering?, :boolean, default: false
+  attr :answer_form, :any, default: nil
+  attr :may_reapply?, :boolean, default: false
+  attr :reapplying?, :boolean, default: false
+  attr :reapply_form, :any, default: nil
+  attr :retry, :map, default: nil
+  attr :consent_version, :string, required: true
 
   defp moves(assigns) do
+    assigns =
+      assign(
+        assigns,
+        :offers?,
+        assigns.moves != [] or assigns.may_answer? or
+          (assigns.may_reapply? and is_nil(assigns.retry))
+      )
+
     ~H"""
     <.panel id="moves">
       <.panel_header title="Actions" subtitle="What you may do with this application right now." />
       <div class="space-y-4 px-5 py-4">
-        <p :if={@moves == []} class="text-sm text-zinc-500 dark:text-zinc-400">
+        <p :if={@moves == [] and not @may_answer?} class="text-sm text-zinc-500 dark:text-zinc-400">
           {why_none(@application)}
         </p>
-        <div :if={@moves != []} class="flex flex-wrap gap-2">
+        <p :if={@retry} id="retried-as" class="text-sm text-zinc-600 dark:text-zinc-400">
+          Retried as
+          <.link
+            navigate={~p"/backoffice/applications/#{@retry.id}"}
+            class="font-mono text-orange-700 hover:underline dark:text-orange-300"
+          >
+            {Format.short_id(@retry.id)}
+          </.link>
+          , now {Format.label(@retry.state)}.
+        </p>
+        <div :if={@offers?} class="flex flex-wrap gap-2">
+          <.action
+            :if={@may_answer?}
+            id="answer"
+            variant="primary"
+            phx-click="answer"
+            phx-value-open="true"
+            class={@answering? && "ring-2 ring-orange-500/40 ring-offset-2 dark:ring-offset-zinc-900"}
+          >
+            <.icon name="hero-pencil-square-mini" class="size-4" /> Answer with corrected terms
+          </.action>
           <.action
             :for={to <- @moves}
             id={"move-#{to}"}
@@ -798,7 +979,20 @@ defmodule FidesWeb.ApplicationLive do
           >
             {move_label(to)}
           </.action>
+          <.action
+            :if={@may_reapply? and is_nil(@retry)}
+            id="reapply"
+            variant="primary"
+            phx-click="reapply"
+            phx-value-open="true"
+            class={
+              @reapplying? && "ring-2 ring-orange-500/40 ring-offset-2 dark:ring-offset-zinc-900"
+            }
+          >
+            <.icon name="hero-arrow-uturn-right-mini" class="size-4" /> Reapply for this holder
+          </.action>
         </div>
+
         <.form
           :if={@move}
           for={@form}
@@ -811,19 +1005,12 @@ defmodule FidesWeb.ApplicationLive do
             Moving to <strong>{Format.label(@move)}</strong>.
             <span class="text-zinc-500 dark:text-zinc-400">The reason stays in the evidence.</span>
           </p>
-          <div
+          <.conflict_notice
             :if={@conflict?}
             id="move-conflict"
-            class="rounded-lg bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-500/10 dark:text-amber-200"
-          >
-            The move did not happen: the application changed while you were writing. It is now <strong>{Format.label(@application.state)}</strong>, version {@application.lock_version}.
-            Read it again and confirm if it still applies; what you wrote stays.
-            <div class="mt-2">
-              <.action id="reload-application" phx-click="reload">
-                <.icon name="hero-arrow-path-mini" class="size-4" /> Read it again
-              </.action>
-            </div>
-          </div>
+            application={@application}
+            what="The move"
+          />
           <p
             :for={error <- @form[:to].errors}
             id="move-error"
@@ -851,8 +1038,135 @@ defmodule FidesWeb.ApplicationLive do
             <.action type="button" phx-click="choose">Back</.action>
           </div>
         </.form>
+
+        <.form
+          :if={@answering? and @may_answer?}
+          for={@answer_form}
+          id="answer-form"
+          phx-change="draft_answer"
+          phx-submit="confirm_answer"
+          class="space-y-3 rounded-xl border border-zinc-200 bg-zinc-50/60 p-4 dark:border-zinc-700 dark:bg-zinc-800/40"
+        >
+          <p class="text-sm">
+            The holder answered with corrected terms.
+            <span class="text-zinc-500 dark:text-zinc-400">
+              They become revision {@application.revision + 1}, and the application goes back to validation.
+            </span>
+          </p>
+          <.conflict_notice
+            :if={@conflict?}
+            id="answer-conflict"
+            application={@application}
+            what="The answer"
+          />
+          <.form_errors errors={general_errors(@answer_form)} />
+          <div class="grid gap-3 sm:grid-cols-2">
+            <.field
+              field={@answer_form[:amount]}
+              label={"Amount (#{@application.currency})"}
+              inputmode="decimal"
+              placeholder="25000.00"
+            />
+            <.field
+              field={@answer_form[:monthly_income]}
+              label={"Monthly income (#{@application.currency})"}
+              inputmode="decimal"
+              placeholder="2500.00"
+            />
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <.action type="submit" variant="primary" phx-disable-with="Answering…">
+              Confirm the answer
+            </.action>
+            <.action type="button" phx-click="answer">Back</.action>
+          </div>
+        </.form>
+        <div
+          :if={@answering? and not @may_answer?}
+          id="answer-gone"
+          class="space-y-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-500/10 dark:text-amber-200"
+        >
+          <p>
+            The application is no longer waiting for information: it is now <strong>{Format.label(@application.state)}</strong>.
+          </p>
+          <.action type="button" phx-click="answer">Back</.action>
+        </div>
+
+        <.form
+          :if={@reapplying? and @may_reapply? and is_nil(@retry)}
+          for={@reapply_form}
+          id="reapply-form"
+          phx-change="draft_reapply"
+          phx-submit="confirm_reapply"
+          class="space-y-3 rounded-xl border border-zinc-200 bg-zinc-50/60 p-4 dark:border-zinc-700 dark:bg-zinc-800/40"
+        >
+          <p class="text-sm">
+            A new application for the same holder, pointing back at this one.
+            <span class="text-zinc-500 dark:text-zinc-400">Each application is retried once.</span>
+          </p>
+          <.form_errors errors={general_errors(@reapply_form)} />
+          <div class="grid gap-3 sm:grid-cols-2">
+            <.field
+              field={@reapply_form[:amount]}
+              label={"Amount (#{@application.currency})"}
+              inputmode="decimal"
+              placeholder="25000.00"
+            />
+            <.field
+              field={@reapply_form[:monthly_income]}
+              label={"Monthly income (#{@application.currency})"}
+              inputmode="decimal"
+              placeholder="2500.00"
+            />
+          </div>
+          <.field
+            field={@reapply_form[:consent]}
+            type="checkbox"
+            label={"The holder accepted the data processing text, version #{@consent_version}."}
+          />
+          <div class="flex flex-wrap gap-2">
+            <.action type="submit" variant="primary" phx-disable-with="Reapplying…">
+              Submit the new application
+            </.action>
+            <.action type="button" phx-click="reapply">Back</.action>
+          </div>
+        </.form>
       </div>
     </.panel>
+    """
+  end
+
+  attr :id, :string, required: true
+  attr :application, :map, required: true
+  attr :what, :string, required: true
+
+  defp conflict_notice(assigns) do
+    ~H"""
+    <div
+      id={@id}
+      class="rounded-lg bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-500/10 dark:text-amber-200"
+    >
+      {@what} did not happen: the application changed while you were writing. It is now <strong>{Format.label(@application.state)}</strong>, version {@application.lock_version}.
+      Read it again and confirm if it still applies; what you wrote stays.
+      <div class="mt-2">
+        <.action id={"#{@id}-reload"} phx-click="reload">
+          <.icon name="hero-arrow-path-mini" class="size-4" /> Read it again
+        </.action>
+      </div>
+    </div>
+    """
+  end
+
+  attr :errors, :list, required: true
+
+  defp form_errors(assigns) do
+    ~H"""
+    <p
+      :for={error <- @errors}
+      class="flex items-center gap-1 text-sm text-rose-600 dark:text-rose-400"
+    >
+      <.icon name="hero-exclamation-circle-mini" class="size-4" /> {error}
+    </p>
     """
   end
 
