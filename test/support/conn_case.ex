@@ -36,4 +36,11 @@ defmodule FidesWeb.ConnCase do
     Fides.DataCase.setup_sandbox(tags)
     {:ok, conn: Phoenix.ConnTest.build_conn()}
   end
+
+  @doc "A connection with the staff user signed in to the backoffice."
+  def staff_session(conn, user, secret) do
+    Plug.Test.init_test_session(conn, %{
+      FidesWeb.StaffSession.session_key() => FidesWeb.ApiHelpers.token(user, secret)
+    })
+  end
 end

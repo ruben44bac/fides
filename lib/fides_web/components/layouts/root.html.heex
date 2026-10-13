@@ -34,10 +34,22 @@
             document.documentElement.setAttribute("data-theme", systemTheme());
           }
         });
+
+        const setSidebar = (state) => {
+          localStorage.setItem("phx:sidebar", state);
+          document.documentElement.setAttribute("data-sidebar", state);
+        };
+        if (!document.documentElement.hasAttribute("data-sidebar")) {
+          setSidebar(localStorage.getItem("phx:sidebar") || "expanded");
+        }
+        window.addEventListener("phx:toggle-sidebar", () => {
+          const collapsed = document.documentElement.getAttribute("data-sidebar") === "collapsed";
+          setSidebar(collapsed ? "expanded" : "collapsed");
+        });
       })();
     </script>
   </head>
-  <body>
+  <body class="min-h-screen bg-zinc-50 text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100">
     {@inner_content}
   </body>
 </html>

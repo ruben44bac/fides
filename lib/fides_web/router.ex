@@ -20,6 +20,11 @@ defmodule FidesWeb.Router do
     plug :accepts, ["json"]
   end
 
+  # The staff's browser session
+  pipeline :staff_browser do
+    plug FidesWeb.StaffSession, :fetch_staff
+  end
+
   pipeline :staff_api do
     plug FidesWeb.AuthenticateStaff
     plug FidesWeb.Idempotency
@@ -65,6 +70,25 @@ defmodule FidesWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
+    get "/backoffice/sign-in", SessionController, :new
+    post "/backoffice/sign-in", SessionController, :create
+  end
+
+  # The backoffice: every screen needs a signed-in staff user
+  scope "/", FidesWeb do
+    pipe_through [:browser, :staff_browser]
+
+    delete "/backoffice/sign-out", SessionController, :delete
+
+    live_session :backoffice,
+      on_mount: [
+        {AshAuthentication.Phoenix.LiveSession, {:set_otp_app, :fides}},
+        AshAuthentication.Phoenix.LiveSession,
+        {FidesWeb.BackofficeHooks, :require_staff}
+      ] do
+      live "/backoffice", InboxLive, :index
+      live "/backoffice/settings", SettingsLive, :show
+    end
   end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development

@@ -20,6 +20,8 @@ defmodule Fides.Application do
          Application.fetch_env!(:fides, Oban)
        )},
       {Phoenix.PubSub, name: Fides.PubSub},
+      # Tells the screens of this node about every change to an application
+      Fides.Platform.ChangeListener,
       # Start to serve requests, typically the last entry
       FidesWeb.Endpoint
     ]

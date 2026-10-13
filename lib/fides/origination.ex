@@ -48,6 +48,32 @@ defmodule Fides.Origination do
     resource Fides.Origination.ApplicationCommands
   end
 
+  @doc """
+  A page of the applications the actor may see, newest first, narrowed by `:country`
+  and `:state` when given. `:after` is the cursor of the previous page and `:limit`
+  the page's size.
+  """
+  @spec inbox(map(), keyword()) :: {:ok, Ash.Page.Keyset.t()} | {:error, term()}
+  def inbox(filters, opts) do
+    require Ash.Query
+
+    query = Ash.Query.for_read(Fides.Origination.CreditApplication, :visible, %{}, opts)
+
+    query =
+      if filters[:country],
+        do: Ash.Query.filter(query, country_code == ^filters[:country]),
+        else: query
+
+    query =
+      if filters[:state], do: Ash.Query.filter(query, state == ^filters[:state]), else: query
+
+    page =
+      [limit: filters[:limit] || 25] ++
+        if(filters[:after], do: [after: filters[:after]], else: [])
+
+    Ash.read(query, Keyword.put(opts, :page, page))
+  end
+
   @doc "Every state an application can be in, in some country."
   defdelegate states(), to: Fides.Origination.Lifecycle
 
