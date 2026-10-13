@@ -43,3 +43,6 @@ npm-debug.log
 /mocks/_build/
 /mocks/deps/
 /mocks/erl_crash.dump
+
+# The local environment, copied from .env.example
+/.env
