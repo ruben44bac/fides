@@ -8,7 +8,7 @@ STAFF ?= analyst_es
 K8S_OVERLAY ?= deploy/k8s/overlays/local
 
 .DEFAULT_GOAL := help
-.PHONY: help setup db down run server mocks migrate seed reset test precommit lint docs token code deploy
+.PHONY: help setup db down run server mocks migrate seed reset test precommit lint docs token code demo deploy
 
 help: ## List the targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-z][a-z-]*:.*## / {printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -66,6 +66,9 @@ token: ## Print a bearer token for a demo staff user while Fides runs (STAFF=ana
 
 code: ## Print a demo staff user's current TOTP code, to sign in to the back office (STAFF=analyst_es)
 	@mix fides.code $(STAFF)
+
+demo: ## Run the three scripted scenarios against the running app and mocks, and follow them
+	@mix fides.demo
 
 deploy: ## Apply the Kubernetes manifests to the current kubectl context (K8S_OVERLAY=deploy/k8s/overlays/local)
 	@test -d $(K8S_OVERLAY) || { echo "No Kubernetes manifests at $(K8S_OVERLAY)"; exit 1; }

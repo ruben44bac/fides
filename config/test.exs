@@ -57,8 +57,9 @@ config :fides, Fides.Accounts.StaffUser,
 
 config :fides, Fides.Accounts.Demo, totp_seed: :crypto.hash(:sha256, "fides test totp seed")
 
-# Lets the token task call the endpoint in the test process
+# Lets the token task and the demo call the endpoint in the test process
 config :fides, Mix.Tasks.Fides.Token, req_options: [plug: {Req.Test, Mix.Tasks.Fides.Token}]
+config :fides, Fides.Demo, req_options: [plug: {Req.Test, Fides.Demo}]
 
 # Bank providers are stubbed in each test
 config :fides, Fides.Banking.Client,
