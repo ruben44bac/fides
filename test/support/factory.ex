@@ -130,6 +130,35 @@ defmodule Fides.Factory do
     )
   end
 
+  @doc "A Mexican holder, Gloria Hernández García, born in 1956: her CURP matches her data."
+  def mexican_holder do
+    %{
+      document_type: "CURP",
+      document: "HEGG560427MVZRRL04",
+      given_names: "Gloria",
+      first_surname: "Hernández",
+      second_surname: "García",
+      birth_date: ~D[1956-04-27],
+      sex: :female,
+      email: "gloria@example.com"
+    }
+  end
+
+  @doc "A Mexican application's submission, with `overrides`."
+  def mexican_submission(overrides \\ %{}) do
+    Map.merge(
+      %{
+        amount_minor: 10_000_000,
+        monthly_income_minor: 3_000_000,
+        currency: "MXN",
+        channel: :api,
+        holder: mexican_holder(),
+        consent_text_version: "2026-10"
+      },
+      Map.new(overrides)
+    )
+  end
+
   @doc """
   The country's first policy version in force, without evidence: proposed and
   published by two risk managers of the country.

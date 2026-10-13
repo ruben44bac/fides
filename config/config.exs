@@ -12,7 +12,8 @@ config :ash_oban, pro?: false
 config :fides, Oban,
   engine: Oban.Engines.Basic,
   notifier: Oban.Notifiers.Postgres,
-  queues: [default: 10],
+  # The orchestrator's steps, and a queue for each agent
+  queues: [default: 10, orchestration: 10, intake: 5],
   lifeline: [rescue_after: {2, :hours}],
   pruner: [max_age: {1, :day}],
   repo: Fides.Platform.Repo,
@@ -124,7 +125,8 @@ config :fides,
     Fides.Identity,
     Fides.Banking,
     Fides.Origination,
-    Fides.Risk
+    Fides.Risk,
+    Fides.Orchestration
   ]
 
 # Configure the endpoint

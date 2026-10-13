@@ -38,6 +38,24 @@ defmodule Fides.Identity.Documents.IT do
     end
   end
 
+  @doc """
+  The birth date and the sex the code encodes. The code keeps two digits of the year,
+  so the century is a guess: enough to check the code again, not to compute an age.
+  """
+  @impl true
+  def encoded("CF", document) do
+    with :ok <- format(document),
+         <<_names::binary-size(6), year::binary-size(2), month::binary-size(1),
+           day::binary-size(2), _place::binary>> <- decode_omocodia(document),
+         month when is_integer(month) <- Enum.find_index(@months, &(<<&1>> == month)),
+         day = String.to_integer(day),
+         {:ok, birth_date} <- any_century(String.to_integer(year), month + 1, rem(day, 40)) do
+      %{birth_date: birth_date, sex: if(day > 40, do: :female, else: :male)}
+    else
+      _malformed -> %{}
+    end
+  end
+
   @doc "The three letters the code takes from the surnames."
   @spec surname_code(map()) :: String.t()
   def surname_code(holder) do
@@ -128,6 +146,16 @@ defmodule Fides.Identity.Documents.IT do
       ],
       & &1
     )
+  end
+
+  # A 29 February needs a leap year, which 2000 is and 1900 is not
+  defp any_century(year, month, day) do
+    Enum.find_value([2000, 1900], :error, fn century ->
+      case Date.new(century + year, month, day) do
+        {:ok, date} -> {:ok, date}
+        {:error, _reason} -> nil
+      end
+    end)
   end
 
   defp odd_value(char) when char in ?0..?9, do: elem(@odd_values, char - ?0)

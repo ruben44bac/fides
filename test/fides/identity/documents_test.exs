@@ -188,6 +188,39 @@ defmodule Fides.Identity.DocumentsTest do
     end
   end
 
+  describe "checking a stored holder again" do
+    property "a valid CURP or codice fiscale checks again with the holder's names alone" do
+      check all {mexican, curp} <- G.mexican(), {italian, code} <- G.italian() do
+        assert Documents.revalidate("MX", "CURP", curp, names(mexican)) == :ok
+        assert Documents.revalidate("IT", "CF", code, names(italian)) == :ok
+      end
+    end
+
+    property "and not with someone else's names" do
+      check all {holder, curp} <- G.mexican(),
+                other <- G.holder(),
+                MX.name_code(other) != MX.name_code(holder) do
+        assert {:error, [:name_mismatch]} = Documents.revalidate("MX", "CURP", curp, names(other))
+      end
+    end
+
+    test "documents that encode no birth date check again as they are" do
+      names = %{given_names: "Ana", first_surname: "Ruiz"}
+
+      assert Documents.revalidate("ES", "DNI", "12345678Z", names) == :ok
+
+      assert {:error, [:invalid_check_character]} =
+               Documents.revalidate("ES", "DNI", "12345678A", names)
+
+      assert Documents.encodes_birth_date?("MX", "CURP")
+      assert Documents.encodes_birth_date?("IT", "CF")
+      refute Documents.encodes_birth_date?("ES", "DNI")
+      refute Documents.encodes_birth_date?("AR", "DNI")
+    end
+  end
+
+  defp names(holder), do: Map.take(holder, [:given_names, :first_surname, :second_surname])
+
   test "normalizes case, spaces, dots and dashes" do
     assert {:ok, %{document: "52998224725"}} = Documents.validate("BR", "CPF", " 529.982.247-25 ")
     assert {:ok, %{document: "12345678Z"}} = Documents.validate("ES", "DNI", "12345678-z")

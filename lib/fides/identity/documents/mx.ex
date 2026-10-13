@@ -52,6 +52,16 @@ defmodule Fides.Identity.Documents.MX do
     end
   end
 
+  @impl true
+  def encoded("CURP", document) do
+    with :ok <- format(document),
+         {:ok, birth_date} <- birth_date(document) do
+      %{birth_date: birth_date, sex: sex(String.at(document, 10))}
+    else
+      _malformed -> %{}
+    end
+  end
+
   @doc "The four letters the CURP takes from the surnames and the given name."
   @spec name_code(map()) :: String.t()
   def name_code(holder) do
@@ -137,6 +147,10 @@ defmodule Fides.Identity.Documents.MX do
       & &1
     )
   end
+
+  defp sex("H"), do: :male
+  defp sex("M"), do: :female
+  defp sex(_other), do: nil
 
   defp sex_mismatch?(_code, nil), do: false
   defp sex_mismatch?("H", :male), do: false
