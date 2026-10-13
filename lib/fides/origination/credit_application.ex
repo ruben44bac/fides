@@ -373,7 +373,7 @@ defmodule Fides.Origination.CreditApplication do
     # Risk reads the holder's other applications for the history rule
     policy action(:read) do
       authorize_if SystemActor
-      authorize_if {Fides.Platform.Checks.Agent, names: [:risk]}
+      authorize_if {Fides.Platform.Checks.Agent, names: [:risk, :ai]}
       authorize_if {GlobalRole, roles: [:admin, :auditor]}
       authorize_if {ScopedRole, roles: [:analyst, :risk_manager]}
     end

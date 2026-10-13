@@ -32,7 +32,8 @@ config :fides, Oban,
     risk: 5,
     reevaluation: 1,
     webhooks: 5,
-    notices: 5
+    notices: 5,
+    ai: 2
   ],
   lifeline: [rescue_after: {2, :hours}],
   pruner: [max_age: {1, :day}],
@@ -147,8 +148,14 @@ config :fides,
     Fides.Origination,
     Fides.Risk,
     Fides.Orchestration,
-    Fides.Notifications
+    Fides.Notifications,
+    Fides.AI
   ]
+
+# The capabilities the life cycle names run where the configuration says; the case
+# brief is written by the simulated model unless the runtime names a real one
+config :fides, Fides.Orchestration, capabilities: %{case_brief: Fides.AI.CaseBriefJob}
+config :fides, Fides.AI, model: Fides.AI.Models.Mock
 
 # Configure the endpoint
 config :fides, FidesWeb.Endpoint,

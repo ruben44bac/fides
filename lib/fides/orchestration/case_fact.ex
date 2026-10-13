@@ -46,7 +46,7 @@ defmodule Fides.Orchestration.CaseFact do
   policies do
     policy action_type(:read) do
       authorize_if SystemActor
-      authorize_if {Fides.Platform.Checks.Agent, names: [:risk]}
+      authorize_if {Fides.Platform.Checks.Agent, names: [:risk, :ai]}
       authorize_if {GlobalRole, roles: [:admin, :auditor]}
       authorize_if {ScopedRole, roles: [:analyst, :risk_manager]}
     end

@@ -73,6 +73,15 @@ defmodule Fides.Orchestration.Step do
   defp run({:notice, template}, application),
     do: Fides.Notifications.notify(application, template, @actor)
 
+  # A capability runs where the configuration says, so the life cycle names it without
+  # the orchestrator depending on what runs it
+  defp run({:capability, name}, application) do
+    case Map.fetch(setting(:capabilities, %{}), name) do
+      {:ok, handler} -> handler.enqueue(application)
+      :error -> :ok
+    end
+  end
+
   defp run(_not_yet, _application), do: :ok
 
   # The reason codes of the decision that put the application in its state; a person's

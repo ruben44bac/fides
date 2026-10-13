@@ -25,7 +25,7 @@ defmodule Fides.Orchestration.ConcurrentFlowTest do
 
   @system SystemActor.new(:test)
   @countries ~w(ES MX)
-  @queues ~w(orchestration intake banking_es banking_mx risk reevaluation webhooks notices)a
+  @queues ~w(orchestration intake banking_es banking_mx risk reevaluation webhooks notices ai)a
   @webhook_secret "fides test provider webhook secret"
 
   setup do

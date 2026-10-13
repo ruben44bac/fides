@@ -22,6 +22,12 @@ end
 
 config :fides, FidesWeb.Endpoint, http: [port: String.to_integer(System.get_env("PORT", "4000"))]
 
+# A real model for the case brief, named by its ReqLLM spec; its provider's key comes
+# from the environment as ReqLLM expects. Without it, the simulated model answers.
+if spec = System.get_env("FIDES_LLM_MODEL") do
+  config :fides, Fides.AI, model: Fides.AI.Models.ReqLLM, spec: spec
+end
+
 if config_env() == :dev do
   # Reload browser tabs when matching files change.
   config :fides, FidesWeb.Endpoint,

@@ -283,6 +283,7 @@ defmodule FidesWeb.ApplicationLive do
       facts: read!(Fides.Orchestration.case_fact_history(country, id, actor)),
       runs: read!(Fides.Orchestration.agent_runs(country, id, actor)),
       accesses: accesses(application, actor),
+      brief: read!(Fides.AI.latest_brief(country, id, actor)),
       retry: read!(Fides.Origination.retry_of(country, id, actor)),
       timeline: id |> Fides.Audit.timeline() |> Enum.reverse()
     }
@@ -448,6 +449,7 @@ defmodule FidesWeb.ApplicationLive do
               providers={@providers}
             />
             <.decisions application={@application} decisions={@decisions} policies={@policies} />
+            <.brief :if={@brief} run={@brief} />
             <.agents facts={@facts} runs={@runs} />
           </div>
           <div class="space-y-6">
@@ -858,6 +860,43 @@ defmodule FidesWeb.ApplicationLive do
     """
   end
 
+  attr :run, :map, required: true
+
+  # What a model wrote for the analyst, from the pseudonymized facts, once it passed
+  # the guardrails; otherwise the template that stood in
+  defp brief(assigns) do
+    ~H"""
+    <.panel id="case-brief">
+      <.panel_header
+        title="Case brief"
+        subtitle="Written from the pseudonymized facts to help the review. It assists; it decides nothing."
+      >
+        <:actions>
+          <.tag tone={if @run.outcome == :model, do: "sky", else: "zinc"}>
+            {brief_source(@run)}
+          </.tag>
+        </:actions>
+      </.panel_header>
+      <div class="space-y-3 px-5 py-4">
+        <p id="brief-summary" class="text-sm leading-relaxed">{@run.output["summary"]}</p>
+        <ul :if={@run.output["signals"] != []} id="brief-signals" class="space-y-1 text-sm">
+          <li :for={signal <- @run.output["signals"]} class="flex items-start gap-2">
+            <.icon name="hero-arrow-right-mini" class="mt-0.5 size-4 shrink-0 text-orange-500" />
+            <span>{signal}</span>
+          </li>
+        </ul>
+        <p class="text-xs text-zinc-500 dark:text-zinc-400">
+          {Format.instant(@run.inserted_at)} · guardrails {@run.guardrails} · {Format.duration(
+            @run.latency_ms
+          )}<span :if={@run.tokens_in + @run.tokens_out > 0}> · {@run.tokens_in + @run.tokens_out} tokens</span><span :if={
+            @run.error
+          }> · {@run.error}</span>
+        </p>
+      </div>
+    </.panel>
+    """
+  end
+
   attr :facts, :list, required: true
   attr :runs, :list, required: true
 
@@ -1207,6 +1246,10 @@ defmodule FidesWeb.ApplicationLive do
   end
 
   defp policy(policies, id), do: Map.get(policies, id)
+
+  defp brief_source(%{outcome: :model, model: "mock"}), do: "simulated model"
+  defp brief_source(%{outcome: :model, model: model}), do: model
+  defp brief_source(%{outcome: :fallback}), do: "template, the model's answer was refused"
 
   defp move_label(:approved), do: "Approve"
   defp move_label(:pending_countersign), do: "Approve, for countersign"
