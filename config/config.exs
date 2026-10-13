@@ -9,6 +9,9 @@ import Config
 
 config :ash_oban, pro?: false
 
+# Bank providers get five seconds to answer
+config :fides, Fides.Banking.Client, receive_timeout: 5_000
+
 config :fides, Oban,
   engine: Oban.Engines.Basic,
   notifier: Oban.Notifiers.Postgres,

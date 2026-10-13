@@ -95,3 +95,7 @@ config :fides, Fides.Accounts.StaffUser,
 # The demo staff's TOTP secrets derive from it; production has no demo staff
 config :fides, Fides.Accounts.Demo,
   totp_seed: :crypto.hash(:sha256, "fides development totp seed")
+
+# The simulated bank providers of the mocks app
+config :fides, Fides.Banking.Client,
+  base_url: System.get_env("FIDES_PROVIDERS_URL", "http://localhost:4010")

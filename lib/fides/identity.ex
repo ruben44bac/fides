@@ -81,6 +81,20 @@ defmodule Fides.Identity do
     end
   end
 
+  @doc "A holder's document type and document, for the agent that asks the bank provider with them."
+  @spec holder_document(String.t(), Ecto.UUID.t(), term()) ::
+          {:ok, %{document_type: String.t(), document: String.t()}} | {:error, term()}
+  def holder_document(country, person_id, actor) do
+    with {:ok, person} <-
+           Ash.get(Fides.Identity.Person, person_id,
+             tenant: country,
+             actor: actor,
+             load: [:document]
+           ) do
+      {:ok, %{document_type: person.document_type, document: person.document}}
+    end
+  end
+
   @doc "Validates a document for a country, against the holder's data when the document encodes it."
   defdelegate validate_document(country, type, document, holder \\ %{}),
     to: Fides.Identity.Documents,

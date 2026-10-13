@@ -89,6 +89,12 @@ if config_env() == :prod do
   # Changing it signs every staff user out
   config :fides, Fides.Accounts.StaffUser, token_signing_secret: key!.("FIDES_STAFF_TOKEN_KEY")
 
+  # The bank providers
+  config :fides, Fides.Banking.Client, base_url: System.fetch_env!("FIDES_PROVIDERS_URL")
+
+  config :fides, Fides.Banking.Callback,
+    secret: System.fetch_env!("FIDES_PROVIDER_WEBHOOK_SECRET")
+
   host = System.get_env("PHX_HOST") || "example.com"
 
   config :fides, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
