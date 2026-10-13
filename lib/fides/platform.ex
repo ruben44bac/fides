@@ -20,6 +20,7 @@ defmodule Fides.Platform do
       Domain,
       BoundaryCompat,
       AuditContext,
+      Build,
       SystemActor,
       AgentActor,
       Actor,

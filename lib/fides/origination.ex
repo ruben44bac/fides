@@ -53,6 +53,17 @@ defmodule Fides.Origination do
     to: Fides.Origination.Lifecycle,
     as: :available
 
+  @doc "Revision `number` of an application's terms."
+  @spec revision(String.t(), Ecto.UUID.t(), pos_integer(), term()) ::
+          {:ok, struct() | nil} | {:error, term()}
+  def revision(country, application_id, number, actor) do
+    require Ash.Query
+
+    Fides.Origination.ApplicationRevision
+    |> Ash.Query.filter(application_id == ^application_id and number == ^number)
+    |> Ash.read_one(tenant: country, actor: actor)
+  end
+
   @doc "What runs on entering each state of a country's life cycle."
   defdelegate life_cycle_effects(country), to: Fides.Origination.Lifecycle, as: :effects
 end
