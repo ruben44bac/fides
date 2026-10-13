@@ -25,6 +25,13 @@ defmodule FidesWeb.Router do
     plug FidesWeb.Idempotency
   end
 
+  # Providers that answer later deliver their data here, signed
+  scope "/webhooks", FidesWeb do
+    pipe_through :api
+
+    post "/providers/:country", ProviderWebhookController, :create
+  end
+
   # Public: signing in, and the document that describes the API
   scope "/api", FidesWeb do
     pipe_through :api

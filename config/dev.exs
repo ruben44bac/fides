@@ -96,9 +96,14 @@ config :fides, Fides.Accounts.StaffUser,
 config :fides, Fides.Accounts.Demo,
   totp_seed: :crypto.hash(:sha256, "fides development totp seed")
 
-# The simulated bank providers of the mocks app
+# The simulated bank providers of the mocks app, and the secret their webhooks are
+# signed with
 config :fides, Fides.Banking.Client,
   base_url: System.get_env("FIDES_PROVIDERS_URL", "http://localhost:4010")
+
+config :fides, Fides.Banking.Callback,
+  secret:
+    System.get_env("FIDES_PROVIDER_WEBHOOK_SECRET", "fides development provider webhook secret")
 
 # Short delays, so a demo sees a retry and a timeout happen
 config :fides, Fides.Orchestration, retry_after: 30, callback_timeout: 60

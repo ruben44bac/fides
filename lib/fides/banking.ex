@@ -5,7 +5,7 @@ defmodule Fides.Banking do
   """
 
   use Fides.Platform.Domain,
-    boundary: [deps: [Fides.Platform, Jason, Decimal], exports: []]
+    boundary: [deps: [Fides.Platform, Fides.Notifications, Jason, Decimal], exports: []]
 
   resources do
     resource Fides.Banking.BankProvider do
@@ -41,6 +41,14 @@ defmodule Fides.Banking do
   defdelegate fetch_profile(country, application_id, holder, request_id, actor),
     to: Fides.Banking.Fetch,
     as: :run
+
+  @doc "Checks and reads a provider's answer delivered through its signed webhook."
+  defdelegate verify_callback(country, signature, body, now \\ System.os_time(:second)),
+    to: Fides.Banking.Callback,
+    as: :verify
+
+  @doc "The event's identity in a provider's delivery, as far as the body allows."
+  defdelegate callback_envelope(provider, body), to: Fides.Banking.Callback, as: :envelope
 
   @doc "The call to a provider still waiting for its answer, by the request id the answer names."
   @spec pending_exchange(String.t(), String.t(), term()) ::

@@ -89,7 +89,7 @@ if config_env() == :prod do
   # Changing it signs every staff user out
   config :fides, Fides.Accounts.StaffUser, token_signing_secret: key!.("FIDES_STAFF_TOKEN_KEY")
 
-  # The bank providers
+  # The bank providers, and the secret the asynchronous ones sign their webhooks with
   config :fides, Fides.Banking.Client, base_url: System.fetch_env!("FIDES_PROVIDERS_URL")
 
   config :fides, Fides.Banking.Callback,

@@ -11,7 +11,13 @@ defmodule Fides.Orchestration do
 
   use Fides.Platform.Domain,
     boundary: [
-      deps: [Fides.Platform, Fides.Origination, Fides.Identity, Fides.Banking],
+      deps: [
+        Fides.Platform,
+        Fides.Origination,
+        Fides.Identity,
+        Fides.Banking,
+        Fides.Notifications
+      ],
       exports: []
     ]
 
@@ -26,4 +32,9 @@ defmodule Fides.Orchestration do
       define :list_case_facts, action: :read
     end
   end
+
+  @doc "Applies, by a job, the data a provider delivered later for a recorded event."
+  defdelegate provider_callback(country, provider, event, parsed),
+    to: Fides.Orchestration.ProviderCallback,
+    as: :enqueue
 end

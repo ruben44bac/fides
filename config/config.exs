@@ -139,7 +139,8 @@ config :fides,
     Fides.Banking,
     Fides.Origination,
     Fides.Risk,
-    Fides.Orchestration
+    Fides.Orchestration,
+    Fides.Notifications
   ]
 
 # Configure the endpoint
