@@ -50,6 +50,32 @@ defmodule Fides.Orchestration do
     end
   end
 
+  @doc """
+  Every fact found about an application, newest first, with the agent and tool that
+  found each one. `case_facts/3` keeps only the current fact of each name.
+  """
+  @spec case_fact_history(String.t(), Ecto.UUID.t(), term()) ::
+          {:ok, [struct()]} | {:error, term()}
+  def case_fact_history(country, application_id, actor) do
+    require Ash.Query
+
+    Fides.Orchestration.CaseFact
+    |> Ash.Query.filter(application_id == ^application_id)
+    |> Ash.Query.sort(inserted_at: :desc)
+    |> Ash.read(tenant: country, actor: actor)
+  end
+
+  @doc "Every run of an agent on an application, newest first."
+  @spec agent_runs(String.t(), Ecto.UUID.t(), term()) :: {:ok, [struct()]} | {:error, term()}
+  def agent_runs(country, application_id, actor) do
+    require Ash.Query
+
+    Fides.Orchestration.AgentRun
+    |> Ash.Query.filter(application_id == ^application_id)
+    |> Ash.Query.sort(inserted_at: :desc)
+    |> Ash.read(tenant: country, actor: actor)
+  end
+
   @doc "Applies, by a job, the data a provider delivered later for a recorded event."
   defdelegate provider_callback(country, provider, event, parsed),
     to: Fides.Orchestration.ProviderCallback,

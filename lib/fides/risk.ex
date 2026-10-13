@@ -32,6 +32,16 @@ defmodule Fides.Risk do
   @doc "The latest decision on an application, or nil."
   defdelegate latest_decision(application_id, opts), to: Fides.Risk.Decide, as: :latest
 
+  @doc "The decisions on an application, newest first."
+  defdelegate decisions(country, application_id, actor), to: Fides.Risk.Decide, as: :list
+
+  @doc """
+  The rules that said something different in `decision` than in `previous`, the
+  decision it replaces: another outcome, or other reason codes. None without a
+  previous decision.
+  """
+  defdelegate changed_rules(decision, previous), to: Fides.Risk.Decide
+
   @doc "Evaluates canonical inputs with a policy's parameters."
   defdelegate evaluate(inputs, params), to: Fides.Risk.Engine
 

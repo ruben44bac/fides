@@ -50,6 +50,30 @@ defmodule Fides.Banking do
   @doc "The event's identity in a provider's delivery, as far as the body allows."
   defdelegate callback_envelope(provider, body), to: Fides.Banking.Callback, as: :envelope
 
+  @doc "The bank profiles recorded for an application, newest first."
+  @spec profiles(String.t(), Ecto.UUID.t(), term()) ::
+          {:ok, [Fides.Banking.BankProfile.t()]} | {:error, term()}
+  def profiles(country, application_id, actor) do
+    require Ash.Query
+
+    Fides.Banking.BankProfile
+    |> Ash.Query.filter(application_id == ^application_id)
+    |> Ash.Query.sort(inserted_at: :desc)
+    |> Ash.read(tenant: country, actor: actor)
+  end
+
+  @doc "The calls to the provider for an application, newest first."
+  @spec exchanges(String.t(), Ecto.UUID.t(), term()) ::
+          {:ok, [Fides.Banking.ProviderExchange.t()]} | {:error, term()}
+  def exchanges(country, application_id, actor) do
+    require Ash.Query
+
+    Fides.Banking.ProviderExchange
+    |> Ash.Query.filter(application_id == ^application_id)
+    |> Ash.Query.sort(inserted_at: :desc)
+    |> Ash.read(tenant: country, actor: actor)
+  end
+
   @doc "The call to a provider still waiting for its answer, by the request id the answer names."
   @spec pending_exchange(String.t(), String.t(), term()) ::
           {:ok, Fides.Banking.ProviderExchange.t() | nil} | {:error, term()}
