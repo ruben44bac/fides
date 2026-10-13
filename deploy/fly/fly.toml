@@ -2,7 +2,7 @@
 # workflow from the image it publishes, with the mocks as a second app on the private
 # network. Secrets are set once by bootstrap.sh.
 app = "fides-demo"
-primary_region = "qro"
+primary_region = "dfw"
 
 [deploy]
   release_command = "/app/bin/setup"

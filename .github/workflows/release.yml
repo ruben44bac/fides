@@ -1,6 +1,8 @@
 name: Release
 
-# Every merge to main publishes the image and deploys the hosted demo from it
+# Every merge to main publishes the image and deploys the hosted demo from it, with
+# a deploy token per Fly app: FLY_API_TOKEN may only manage fides-demo, and
+# FLY_MOCKS_API_TOKEN only fides-demo-mocks
 on:
   push:
     branches: [main]
@@ -39,6 +41,8 @@ jobs:
 
       - uses: superfly/flyctl-actions/setup-flyctl@master
 
+      # Each token pushes only its app's repository on registry.fly.io, so the
+      # registry is logged in to again before the mocks image
       - run: flyctl auth docker
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
@@ -61,6 +65,10 @@ jobs:
           cache-to: type=gha,mode=max
 
       # The simulated providers and receiver, for the demo
+      - run: flyctl auth docker
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_MOCKS_API_TOKEN }}
+
       - uses: docker/build-push-action@v6
         with:
           context: mocks
@@ -82,15 +90,17 @@ jobs:
     environment:
       name: demo
       url: https://fides-demo.fly.dev
-    env:
-      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
       - uses: superfly/flyctl-actions/setup-flyctl@master
 
       - run: flyctl deploy --config deploy/fly/mocks.fly.toml --image ${{ env.FLY_MOCKS_IMAGE }}:${{ github.sha }} --ha=false
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_MOCKS_API_TOKEN }}
 
       - run: flyctl deploy --config deploy/fly/fly.toml --image ${{ env.FLY_IMAGE }}:${{ github.sha }} --ha=false
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
       - run: curl --fail --silent --show-error --retry 5 --retry-delay 10 --retry-all-errors https://fides-demo.fly.dev/health

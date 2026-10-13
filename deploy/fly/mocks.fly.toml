@@ -3,7 +3,7 @@
 # deliver Mexico's webhooks to fides-demo.internal. Deployed by the Release workflow
 # from the mocks image it publishes; the secrets are set once by bootstrap.sh.
 app = "fides-demo-mocks"
-primary_region = "qro"
+primary_region = "dfw"
 
 [env]
   MOCKS_PORT = "4010"

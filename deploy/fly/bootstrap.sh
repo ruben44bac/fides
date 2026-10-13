@@ -1,22 +1,25 @@
 #!/usr/bin/env bash
-# One-time setup of the hosted demo on Fly.io: the three apps, the database volume,
-# the secrets and the first deploy of the database. Running it again is safe:
-# it skips what exists and never replaces a secret.
+# One-time setup of the hosted demo on Fly.io: the three apps on a private network of
+# their own, the database volume, the secrets and the first deploy of the database.
+# Running it again is safe: it skips what exists and never replaces a secret.
 #
-#   deploy/fly/bootstrap.sh                        # region qro, organization personal
+#   deploy/fly/bootstrap.sh                        # region dfw, organization personal
 #   FLY_REGION=mad FLY_ORG=acme deploy/fly/bootstrap.sh
 #
 # Needs flyctl signed in and openssl. The region must match primary_region in
-# fly.toml and db.fly.toml.
+# fly.toml, db.fly.toml and mocks.fly.toml.
 set -euo pipefail
 
 cd "$(dirname "$0")"
 
 org="${FLY_ORG:-personal}"
-region="${FLY_REGION:-qro}"
+region="${FLY_REGION:-dfw}"
 app="fides-demo"
 db_app="fides-demo-db"
 mocks_app="fides-demo-mocks"
+# Apps on a network of their own see nothing else in the organization, and nothing
+# else sees them; a network can only be set when the app is created
+network="fides-demo"
 
 app_exists() {
   fly apps list --org "$org" --json | grep -qi "\"name\": *\"$1\""
@@ -26,9 +29,9 @@ has_secret() {
   fly secrets list --app "$1" --json | grep -qi "\"name\": *\"$2\""
 }
 
-app_exists "$db_app" || fly apps create "$db_app" --org "$org"
-app_exists "$app" || fly apps create "$app" --org "$org"
-app_exists "$mocks_app" || fly apps create "$mocks_app" --org "$org"
+app_exists "$db_app" || fly apps create "$db_app" --org "$org" --network "$network"
+app_exists "$app" || fly apps create "$app" --org "$org" --network "$network"
+app_exists "$mocks_app" || fly apps create "$mocks_app" --org "$org" --network "$network"
 
 if ! fly volumes list --app "$db_app" --json | grep -qi '"name": *"pgdata"'; then
   fly volumes create pgdata --app "$db_app" --region "$region" --size 1 --yes
@@ -70,10 +73,12 @@ fly deploy --config db.fly.toml --app "$db_app" --ha=false
 
 cat <<MESSAGE
 
-The database is up. Now save a deploy token as the FLY_API_TOKEN secret of the
-GitHub repository:
+The database is up. Now save a deploy token per app as the FLY_API_TOKEN and
+FLY_MOCKS_API_TOKEN secrets of the GitHub repository; each one may only manage
+its app:
 
-  fly tokens create deploy --app $app --expiry 8760h
+  fly tokens create deploy --app $app --expiry 8760h | tr -d '\\n' | gh secret set FLY_API_TOKEN
+  fly tokens create deploy --app $mocks_app --expiry 8760h | tr -d '\\n' | gh secret set FLY_MOCKS_API_TOKEN
 
 Then merge to main, or run the Release workflow by hand, to deploy $app and $mocks_app.
 MESSAGE
