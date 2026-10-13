@@ -88,6 +88,16 @@ defmodule Fides.Origination do
   @doc "The states `actor` may move an application to right now, with a transition."
   defdelegate available_moves(application, actor), to: Fides.Origination.Moves, as: :available
 
+  @doc "The application that retried `application_id`, or nil: each one is retried once."
+  @spec retry_of(String.t(), Ecto.UUID.t(), term()) :: {:ok, struct() | nil} | {:error, term()}
+  def retry_of(country, application_id, actor) do
+    require Ash.Query
+
+    Fides.Origination.CreditApplication
+    |> Ash.Query.filter(previous_application_id == ^application_id)
+    |> Ash.read_one(tenant: country, actor: actor)
+  end
+
   @doc "Every state an application can be in, in some country."
   defdelegate states(), to: Fides.Origination.Lifecycle
 

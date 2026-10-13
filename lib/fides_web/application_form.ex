@@ -94,6 +94,28 @@ defmodule FidesWeb.ApplicationForm do
     end
   end
 
+  @doc """
+  The terms typed, the amount and the monthly income, in minor units, or the errors by
+  field: for an answer to a request for information, or a reapplication.
+  """
+  @spec terms(map()) ::
+          {:ok, %{amount_minor: pos_integer(), monthly_income_minor: pos_integer()}}
+          | {:error, errors()}
+  def terms(params) do
+    case amount_errors(:amount, params["amount"]) ++
+           amount_errors(:monthly_income, params["monthly_income"]) do
+      [] ->
+        {:ok,
+         %{
+           amount_minor: minor!(params["amount"]),
+           monthly_income_minor: minor!(params["monthly_income"])
+         }}
+
+      errors ->
+        {:error, errors}
+    end
+  end
+
   @doc "The action's errors, read back onto the form's fields."
   @spec errors_from(Exception.t()) :: errors()
   def errors_from(%{errors: errors}) when is_list(errors), do: Enum.map(errors, &read_back/1)
