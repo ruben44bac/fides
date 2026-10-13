@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# One-time setup of the hosted demo on Fly.io: both apps, the database volume,
+# One-time setup of the hosted demo on Fly.io: the three apps, the database volume,
 # the secrets and the first deploy of the database. Running it again is safe:
 # it skips what exists and never replaces a secret.
 #
@@ -16,6 +16,7 @@ org="${FLY_ORG:-personal}"
 region="${FLY_REGION:-qro}"
 app="fides-demo"
 db_app="fides-demo-db"
+mocks_app="fides-demo-mocks"
 
 app_exists() {
   fly apps list --org "$org" --json | grep -qi "\"name\": *\"$1\""
@@ -27,6 +28,7 @@ has_secret() {
 
 app_exists "$db_app" || fly apps create "$db_app" --org "$org"
 app_exists "$app" || fly apps create "$app" --org "$org"
+app_exists "$mocks_app" || fly apps create "$mocks_app" --org "$org"
 
 if ! fly volumes list --app "$db_app" --json | grep -qi '"name": *"pgdata"'; then
   fly volumes create pgdata --app "$db_app" --region "$region" --size 1 --yes
@@ -51,6 +53,19 @@ if ! has_secret "$app" SECRET_KEY_BASE; then
     FIDES_DEMO_TOTP_SEED="${FIDES_DEMO_TOTP_SEED:-fides development totp seed}"
 fi
 
+# The providers' webhooks and the deliveries to the receiver are signed with secrets
+# both apps share
+if ! has_secret "$app" FIDES_PROVIDER_WEBHOOK_SECRET; then
+  provider_secret="$(openssl rand -hex 24)"
+  receiver_secret="$(openssl rand -hex 24)"
+  fly secrets set --app "$app" --stage \
+    FIDES_PROVIDER_WEBHOOK_SECRET="$provider_secret" \
+    FIDES_WEBHOOK_RECEIVER_SECRET="$receiver_secret"
+  fly secrets set --app "$mocks_app" --stage \
+    MOCKS_WEBHOOK_SECRET="$provider_secret" \
+    MOCKS_RECEIVER_SECRET="$receiver_secret"
+fi
+
 fly deploy --config db.fly.toml --app "$db_app" --ha=false
 
 cat <<MESSAGE
@@ -60,5 +75,5 @@ GitHub repository:
 
   fly tokens create deploy --app $app --expiry 8760h
 
-Then merge to main, or run the Release workflow by hand, to deploy $app.
+Then merge to main, or run the Release workflow by hand, to deploy $app and $mocks_app.
 MESSAGE

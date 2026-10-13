@@ -12,14 +12,15 @@ environment, so nothing in the application knows about Fly.
 | --- | --- | --- | --- |
 | `fides-demo` | One node that serves and takes jobs. `/app/bin/setup` runs as the release command before each deploy, so migrations and seeds are always current | shared-cpu-1x, 1 GB | about USD 6 a month |
 | `fides-demo-db` | PostgreSQL 18 with pgvector (`pgvector/pgvector:pg18`, the image compose and CI use) on a 1 GB volume, reachable only on the private network as `fides-demo-db.internal` | shared-cpu-1x, 512 MB | about USD 3.5 a month |
+| `fides-demo-mocks` | The six simulated bank providers and the webhook receiver, from the mocks image the workflow publishes, reachable only on the private network as `fides-demo-mocks.internal`; they deliver Mexico's webhooks to `fides-demo.internal` | shared-cpu-1x, 256 MB | about USD 2 a month |
 
-Fly has no free tier for new accounts: a card is required. Both apps stay on all
+Fly has no free tier for new accounts: a card is required. The three apps stay on all
 the time, so queued jobs run and the first request is never slow.
 
 ## One-time setup
 
 1. Install flyctl and sign in: `fly auth login`.
-2. Run `deploy/fly/bootstrap.sh`. It creates both apps, the volume and the
+2. Run `deploy/fly/bootstrap.sh`. It creates the three apps, the volume and the
    secrets, and deploys the database. `FLY_REGION` (default `qro`) and `FLY_ORG`
    (default `personal`) override the defaults; the region must match
    `primary_region` in both TOML files.
@@ -27,8 +28,8 @@ the time, so queued jobs run and the first request is never slow.
    repository: `fly tokens create deploy --app fides-demo --expiry 8760h`.
 4. Optionally create the `demo` environment in the repository settings, so the
    deployments view links to the URL.
-5. Merge to `main`, or run the Release workflow by hand. It pushes the image to
-   `registry.fly.io/fides-demo` and deploys it.
+5. Merge to `main`, or run the Release workflow by hand. It pushes the two images to
+   `registry.fly.io/fides-demo` and `registry.fly.io/fides-demo-mocks` and deploys them.
 
 ## Using it
 
@@ -41,7 +42,7 @@ Anyone with this repository can sign in as any demo user. All data is synthetic.
 
 ## Operating it
 
-- Logs: `fly logs --app fides-demo`
+- Logs: `fly logs --app fides-demo`, and `fly logs --app fides-demo-mocks` for the providers
 - A remote console: `fly ssh console --app fides-demo --pty -C "/app/bin/fides remote"`
 - Reseed by hand: `fly ssh console --app fides-demo -C /app/bin/setup`
 - Deploy a given image by hand: `fly deploy --config deploy/fly/fly.toml --image registry.fly.io/fides-demo:<sha>`
