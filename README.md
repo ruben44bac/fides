@@ -20,6 +20,7 @@ Built with Elixir 1.20, Phoenix 1.8, Ash 3, Oban and PostgreSQL 18.
 ## Contents
 
 - [Run it](#run-it)
+- [Demo users and how to sign in](#demo-users-and-how-to-sign-in)
 - [Try it](#try-it)
 - [Architecture](#architecture)
 - [The four agentic primitives](#the-four-agentic-primitives)
@@ -68,15 +69,7 @@ make token         # a bearer token for a demo staff user, while Fides runs
 
 Nothing needs an external credential: the bank providers and the webhook receiver are simulated by the `mocks` app, and every development key has a default or is generated. `.env.example` lists the variables, and which ones production requires.
 
-**Demo staff:** all of them share the password `fides demo password`, and each has a TOTP second factor: `make code` prints the current code, and `make token` signs in with it.
-
-| Handle | Email | Can |
-| --- | --- | --- |
-| `analyst_es` | `analyst.es@fides.test` | Work applications in Spain |
-| `analyst_mx` | `analyst.mx@fides.test` | Work applications in Mexico |
-| `risk_manager_1`, `risk_manager_2` | `risk.manager1@fides.test`, `risk.manager2@fides.test` | Countersign and publish policies, in every country |
-| `admin` | `admin@fides.test` | Manage staff and webhook receivers |
-| `auditor` | `auditor@fides.test` | Read everything, change nothing |
+**Demo staff:** six users, one password and a second factor, the same in every environment: see [Demo users and how to sign in](#demo-users-and-how-to-sign-in).
 
 **Useful URLs:**
 
@@ -86,6 +79,37 @@ Nothing needs an external credential: the bank providers and the webhook receive
 - Back office: <http://localhost:4000/backoffice>. Sign in with a demo user's email, the shared password and the code from `make code`: the inbox, each application's detail, the policies and the console.
 
 A Postman collection in `postman/` walks through every endpoint, signs in with the TOTP codes, and follows the orchestrator.
+
+## Demo users and how to sign in
+
+This is how the team tries Fides from the first minute, in every environment. Each one seeds the same six demo staff. They share the password `fides demo password`, and each has a second factor: a TOTP code that stays current for 30 seconds and works once, so signing in twice within those seconds fails the second time.
+
+| Handle | Email | Can |
+| --- | --- | --- |
+| `analyst_es` | `analyst.es@fides.test` | Work applications in Spain |
+| `analyst_mx` | `analyst.mx@fides.test` | Work applications in Mexico |
+| `risk_manager_1`, `risk_manager_2` | `risk.manager1@fides.test`, `risk.manager2@fides.test` | See every country's applications; one proposes a policy version and the other approves it |
+| `admin` | `admin@fides.test` | Manage staff and webhook receivers |
+| `auditor` | `auditor@fides.test` | Read everything, change nothing |
+
+**A user's current code.** Every environment but production sets `FIDES_DEMO_TOTP_SEED` to the development phrase, so the codes can be computed from any checkout with the toolchain: `mix fides.code analyst_es`. Without the toolchain, the running app prints them:
+
+| Environment | Start | Back office and API explorer | A user's code |
+| --- | --- | --- | --- |
+| Docker alone | `make run` | <http://localhost:4000/backoffice>, <http://localhost:4000/api/swaggerui> | `make code STAFF=analyst_es` |
+| From the host | `LOCAL=1 make run` | The same | `LOCAL=1 make code STAFF=analyst_es` |
+| Kubernetes, on kind | `make deploy` ([`deploy/k8s`](deploy/k8s/README.md)) | <http://localhost:30400/backoffice>, <http://localhost:30400/api/swaggerui> | `kubectl -n fides exec deploy/web -- /app/bin/fides eval 'Fides.Release.code("analyst_es")'` |
+| Hosted demo, on Fly.io | Deployed from `main` ([`deploy/fly`](deploy/fly/README.md)) | <https://fides-demo.fly.dev/backoffice>, <https://fides-demo.fly.dev/api/swaggerui> | `fly ssh console --app fides-demo -C "/app/bin/fides eval 'Fides.Release.code(\"analyst_es\")'"` |
+
+Production sets no seed and has no demo staff.
+
+**Signing in:**
+
+1. **Back office.** Open the environment's `/backoffice` and enter the user's email, the password and the current code. Each user sees what their role allows: an analyst, their country's applications; a risk manager, every country's applications and policies; the auditor, everything, read only.
+2. **API.** `make token STAFF=analyst_es` signs the user in against localhost with the password and the current code, and prints a bearer token to send as `Authorization: Bearer`; for another environment, `FIDES_URL=https://fides-demo.fly.dev mix fides.token analyst_es`.
+3. **The three scenarios.** `make demo` against localhost, or `FIDES_URL=<the environment> mix fides.demo`, runs them through the API and follows them state by state while the inbox shows them move.
+
+The hosted demo has a walkthrough for the team, screen by screen, in [`deploy/fly/README.md`](deploy/fly/README.md#trying-it).
 
 ## Try it
 
@@ -521,7 +545,7 @@ One image serves every environment ([`deploy/README.md`](deploy/README.md)), bui
 - **One image, two roles.** `FIDES_ROLE=web` serves the API, the back office and inbound webhooks, and enqueues jobs without running any. `FIDES_ROLE=worker` runs every queue and is the only one that calls providers. The default, `all`, does both on one node. `/app/bin/setup` creates the database if missing, migrates and seeds; `GET /health` answers while the database does.
 - **Docker alone.** [`deploy/compose.yml`](deploy/compose.yml) runs PostgreSQL and, under the `app` profile, the migrations, a web node, a worker and the mocks: that is `make run`.
 - **Kubernetes** ([`deploy/k8s`](deploy/k8s/README.md), kustomize): a base with the web Deployment, Service and HPA, the worker Deployment, the migrations as a Job that removes itself once done, PostgreSQL for a demo as a StatefulSet, the mocks, and a NetworkPolicy so only workers reach the providers; and a local overlay for kind with the images built on this machine, applied with `make deploy`.
-- **Hosted demo.** [`deploy/fly`](deploy/fly/README.md) runs the same image on Fly.io, deployed by the Release workflow.
+- **Hosted demo.** [`deploy/fly`](deploy/fly/README.md) runs the same image on Fly.io at <https://fides-demo.fly.dev>, deployed by the Release workflow, with the mocks as a second app on the private network and a walkthrough for the team.
 
 ## Key decisions
 
