@@ -21,6 +21,7 @@ defmodule Fides.Platform do
       BoundaryCompat,
       AuditContext,
       Build,
+      ChangeListener,
       SystemActor,
       AgentActor,
       Actor,
