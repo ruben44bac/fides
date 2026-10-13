@@ -9,8 +9,9 @@ import Config
 
 config :ash_oban, pro?: false
 
-# Bank providers get five seconds to answer
+# Bank providers and webhook receivers get five seconds to answer
 config :fides, Fides.Banking.Client, receive_timeout: 5_000
+config :fides, Fides.Notifications.Deliver, receive_timeout: 5_000
 
 config :fides, Oban,
   engine: Oban.Engines.Basic,
@@ -28,7 +29,8 @@ config :fides, Oban,
     banking_co: 2,
     banking_br: 2,
     risk: 5,
-    reevaluation: 1
+    reevaluation: 1,
+    webhooks: 5
   ],
   lifeline: [rescue_after: {2, :hours}],
   pruner: [max_age: {1, :day}],
