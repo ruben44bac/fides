@@ -29,6 +29,24 @@ defmodule FidesWeb.Format do
   def actor(nil), do: "unknown"
   def actor(other), do: other
 
+  @countries %{
+    "ES" => "Spain",
+    "PT" => "Portugal",
+    "IT" => "Italy",
+    "MX" => "Mexico",
+    "CO" => "Colombia",
+    "BR" => "Brazil"
+  }
+
+  @doc "A country's name, from its code."
+  @spec country(String.t()) :: String.t()
+  def country(code), do: Map.get(@countries, code, code)
+
+  @doc "A member of staff by id: `you` for the one signed in, otherwise as the evidence names them."
+  @spec staff(String.t(), String.t()) :: String.t()
+  def staff(user_id, user_id), do: "you"
+  def staff(staff_id, _user_id), do: actor("staff_user:" <> staff_id)
+
   @doc "The first characters of an id, enough to tell applications apart on a screen."
   @spec short_id(String.t()) :: String.t()
   def short_id(id), do: String.slice(id, 0, 8)

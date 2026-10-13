@@ -31,7 +31,9 @@ defmodule FidesWeb.Layouts do
     default: nil,
     doc: "the current [scope](https://phoenix.hexdocs.pm/scopes.html)"
 
-  attr :nav, :atom, default: nil, doc: "the menu item of the screen, :inbox or :settings"
+  attr :nav, :atom,
+    default: nil,
+    doc: "the menu item of the screen: :inbox, :policies or :settings"
 
   slot :inner_block, required: true
 

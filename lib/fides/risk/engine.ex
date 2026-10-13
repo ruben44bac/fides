@@ -34,6 +34,18 @@ defmodule Fides.Risk.Engine do
     end
   end
 
+  @doc "The names of a country's thresholds: the common ones first, then the country's own."
+  @spec param_names(String.t()) :: {:ok, [atom()]} | {:error, :unsupported_country}
+  def param_names(country) do
+    with {:ok, policy} <- policy(country) do
+      {:ok, common_param_names() ++ Enum.sort(Map.keys(policy.default_params()))}
+    end
+  end
+
+  @doc "The names of the thresholds of the rules every country applies."
+  @spec common_param_names() :: [atom()]
+  def common_param_names, do: Enum.sort(Map.keys(Rules.default_params()))
+
   @doc """
   Checks the thresholds proposed for a country's policy: exactly the ones of its
   first version, each a non-negative integer, and consistent with each other. Keys

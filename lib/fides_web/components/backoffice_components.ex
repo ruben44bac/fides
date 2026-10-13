@@ -56,6 +56,12 @@ defmodule FidesWeb.BackofficeComponents do
           current={@nav == :inbox}
         />
         <.sidebar_item
+          navigate="/backoffice/policies"
+          icon="hero-scale"
+          label="Policies"
+          current={@nav == :policies}
+        />
+        <.sidebar_item
           navigate="/backoffice/settings"
           icon="hero-cog-6-tooth"
           label="Settings"
@@ -247,6 +253,8 @@ defmodule FidesWeb.BackofficeComponents do
 
   attr :options, :list, default: []
   attr :prompt, :string, default: nil
+  attr :hint, :string, default: nil, doc: "what the field means, under its label"
+  attr :suffix, :string, default: nil, doc: "the unit, inside the input on the right"
   attr :class, :any, default: nil
   attr :rest, :global, include: ~w(autocomplete inputmode placeholder required disabled rows)
 
@@ -332,21 +340,56 @@ defmodule FidesWeb.BackofficeComponents do
     ~H"""
     <label id={"#{@field.id}-field"} class={["block", @class]}>
       <span class="mb-1.5 block text-xs font-medium text-zinc-600 dark:text-zinc-400">{@label}</span>
-      <input
-        type={@type}
-        id={@field.id}
-        name={@field.name}
-        value={Phoenix.HTML.Form.normalize_value(@type, @field.value)}
-        class={[
-          "h-10 w-full rounded-lg border bg-white px-3 text-sm shadow-sm transition-colors placeholder:text-zinc-400",
-          "focus:outline-none focus:ring-2 focus:ring-orange-500/30 dark:bg-zinc-900 dark:placeholder:text-zinc-500",
-          @errors == [] && "border-zinc-300 focus:border-orange-500 dark:border-zinc-700",
-          @errors != [] && "border-rose-400 focus:border-rose-500"
-        ]}
-        {@rest}
-      />
+      <span :if={@hint} class="-mt-1 mb-1.5 block text-xs text-zinc-500 dark:text-zinc-400">
+        {@hint}
+      </span>
+      <span class="relative block">
+        <input
+          type={@type}
+          id={@field.id}
+          name={@field.name}
+          value={Phoenix.HTML.Form.normalize_value(@type, @field.value)}
+          class={[
+            "h-10 w-full rounded-lg border bg-white px-3 text-sm shadow-sm transition-colors placeholder:text-zinc-400",
+            "focus:outline-none focus:ring-2 focus:ring-orange-500/30 dark:bg-zinc-900 dark:placeholder:text-zinc-500",
+            @suffix && "pr-20",
+            @errors == [] && "border-zinc-300 focus:border-orange-500 dark:border-zinc-700",
+            @errors != [] && "border-rose-400 focus:border-rose-500"
+          ]}
+          {@rest}
+        />
+        <span
+          :if={@suffix}
+          class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs font-medium text-zinc-500 dark:text-zinc-400"
+        >
+          {@suffix}
+        </span>
+      </span>
       <.field_errors errors={@errors} />
     </label>
+    """
+  end
+
+  @doc "A number that matters, with what it is called and, if useful, what it means."
+  attr :label, :string, required: true
+  attr :hint, :string, default: nil
+  attr :rest, :global
+  slot :inner_block, required: true
+
+  def stat(assigns) do
+    ~H"""
+    <div
+      class="rounded-xl border border-zinc-200 bg-zinc-50/60 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-800/40"
+      {@rest}
+    >
+      <p class="text-[11px] font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+        {@label}
+      </p>
+      <p class="mt-1 text-lg font-semibold tabular-nums tracking-tight">
+        {render_slot(@inner_block)}
+      </p>
+      <p :if={@hint} class="mt-1 text-xs leading-snug text-zinc-500 dark:text-zinc-400">{@hint}</p>
+    </div>
     """
   end
 
