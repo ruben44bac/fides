@@ -27,6 +27,9 @@ defmodule Fides.Identity.Documents.IT do
   def document_types, do: ["CF"]
 
   @impl true
+  def needs("CF"), do: [:birth_date, :sex]
+
+  @impl true
   def validate("CF", document, holder) do
     with :ok <- format(document),
          :ok <- control(document),

@@ -24,7 +24,11 @@ defmodule FidesWeb.InboxLive do
 
     {:ok,
      socket
-     |> assign(page_title: "Inbox", states: Fides.Origination.states())
+     |> assign(
+       page_title: "Inbox",
+       states: Fides.Origination.states(),
+       submits?: Fides.Platform.Actor.countries(scope.user, [:analyst]) != []
+     )
      |> stream_configure(:applications, dom_id: &"application-#{&1.id}")}
   end
 
@@ -121,6 +125,14 @@ defmodule FidesWeb.InboxLive do
         >
           <:actions>
             <.live_dot />
+            <.action
+              :if={@submits?}
+              id="new-application"
+              navigate={~p"/backoffice/applications/new"}
+              variant="primary"
+            >
+              <.icon name="hero-plus-mini" class="size-4" /> New application
+            </.action>
           </:actions>
         </.page_header>
 

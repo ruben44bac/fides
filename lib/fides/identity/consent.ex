@@ -7,6 +7,8 @@ defmodule Fides.Identity.Consent do
 
   use Fides.Platform.Resource, domain: Fides.Identity
 
+  @current_text_version "2026-10"
+
   postgres do
     table "consents"
     repo Fides.Platform.Repo
@@ -98,4 +100,8 @@ defmodule Fides.Identity.Consent do
       define_attribute? false
     end
   end
+
+  @doc "The version of the text holders are shown now, the one a new consent records."
+  @spec current_text_version() :: String.t()
+  def current_text_version, do: @current_text_version
 end

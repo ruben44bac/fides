@@ -87,6 +87,7 @@ defmodule FidesWeb.Router do
         {FidesWeb.BackofficeHooks, :require_staff}
       ] do
       live "/backoffice", InboxLive, :index
+      live "/backoffice/applications/new", NewApplicationLive, :new
       live "/backoffice/applications/:id", ApplicationLive, :show
       live "/backoffice/settings", SettingsLive, :show
     end

@@ -234,20 +234,50 @@ defmodule FidesWeb.BackofficeComponents do
   defp tone_classes("violet"),
     do: "bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300"
 
-  @doc "A labelled input, textarea or select of a form."
+  @doc """
+  A labelled input, textarea, select or checkbox of a form. Errors show once the field
+  was used: after a change to it, or a submit.
+  """
   attr :field, Phoenix.HTML.FormField, required: true
   attr :label, :string, required: true
-  attr :type, :string, default: "text", values: ~w(text email password select textarea)
+
+  attr :type, :string,
+    default: "text",
+    values: ~w(text email password date select textarea checkbox)
+
   attr :options, :list, default: []
   attr :prompt, :string, default: nil
   attr :class, :any, default: nil
   attr :rest, :global, include: ~w(autocomplete inputmode placeholder required disabled rows)
 
-  def field(%{type: "textarea"} = assigns) do
-    assigns = assign(assigns, :errors, Enum.map(assigns.field.errors, &translate_error/1))
+  def field(%{type: "checkbox"} = assigns) do
+    assigns = assign(assigns, :errors, errors(assigns.field))
 
     ~H"""
-    <label class={["block", @class]}>
+    <div id={"#{@field.id}-field"} class={@class}>
+      <label class="flex items-start gap-3">
+        <input type="hidden" name={@field.name} value="false" />
+        <input
+          type="checkbox"
+          id={@field.id}
+          name={@field.name}
+          value="true"
+          checked={Phoenix.HTML.Form.normalize_value("checkbox", @field.value)}
+          class="mt-0.5 size-4 shrink-0 rounded border-zinc-300 text-orange-600 focus:ring-orange-500/40 dark:border-zinc-700 dark:bg-zinc-900"
+          {@rest}
+        />
+        <span class="text-sm">{@label}</span>
+      </label>
+      <.field_errors errors={@errors} />
+    </div>
+    """
+  end
+
+  def field(%{type: "textarea"} = assigns) do
+    assigns = assign(assigns, :errors, errors(assigns.field))
+
+    ~H"""
+    <label id={"#{@field.id}-field"} class={["block", @class]}>
       <span class="mb-1.5 block text-xs font-medium text-zinc-600 dark:text-zinc-400">{@label}</span>
       <textarea
         id={@field.id}
@@ -266,10 +296,10 @@ defmodule FidesWeb.BackofficeComponents do
   end
 
   def field(%{type: "select"} = assigns) do
-    assigns = assign(assigns, :errors, Enum.map(assigns.field.errors, &translate_error/1))
+    assigns = assign(assigns, :errors, errors(assigns.field))
 
     ~H"""
-    <label class={["block", @class]}>
+    <label id={"#{@field.id}-field"} class={["block", @class]}>
       <span class="mb-1.5 block text-xs font-medium text-zinc-600 dark:text-zinc-400">{@label}</span>
       <span class="relative block">
         <select
@@ -297,10 +327,10 @@ defmodule FidesWeb.BackofficeComponents do
   end
 
   def field(assigns) do
-    assigns = assign(assigns, :errors, Enum.map(assigns.field.errors, &translate_error/1))
+    assigns = assign(assigns, :errors, errors(assigns.field))
 
     ~H"""
-    <label class={["block", @class]}>
+    <label id={"#{@field.id}-field"} class={["block", @class]}>
       <span class="mb-1.5 block text-xs font-medium text-zinc-600 dark:text-zinc-400">{@label}</span>
       <input
         type={@type}
@@ -318,6 +348,13 @@ defmodule FidesWeb.BackofficeComponents do
       <.field_errors errors={@errors} />
     </label>
     """
+  end
+
+  # A field the form has not touched yet keeps its errors to itself
+  defp errors(field) do
+    if Phoenix.Component.used_input?(field),
+      do: Enum.map(field.errors, &translate_error/1),
+      else: []
   end
 
   attr :errors, :list, required: true
