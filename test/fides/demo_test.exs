@@ -11,7 +11,7 @@ defmodule Fides.DemoTest do
   require Ecto.Query
 
   @system SystemActor.new(:orchestrator)
-  @queues ~w(orchestration intake banking_es banking_mx risk webhooks notices)a
+  @queues ~w(orchestration intake banking_es banking_mx risk webhooks notices ai)a
   @webhook_secret "fides test provider webhook secret"
 
   setup do
