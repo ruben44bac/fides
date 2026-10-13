@@ -99,10 +99,7 @@ defmodule Fides.Factory do
   end
 
   @doc "A valid Spanish DNI for `number`, so each test can have its own holders."
-  def dni(number) do
-    digits = number |> rem(100_000_000) |> Integer.to_string() |> String.pad_leading(8, "0")
-    digits <> Fides.Identity.Documents.ES.control_letter(digits)
-  end
+  def dni(number), do: Fides.Identity.Documents.Samples.dni(number)
 
   @doc "A Spanish holder's data, as a submission carries it."
   def holder(number \\ System.unique_integer([:positive])) do

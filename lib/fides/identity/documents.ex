@@ -11,7 +11,7 @@ defmodule Fides.Identity.Documents do
   it, the holder's birth date. An invalid one returns every reason found.
   """
 
-  use Boundary, type: :strict, deps: [], exports: [Holder]
+  use Boundary, type: :strict, deps: [], exports: [Holder, Samples]
 
   alias Fides.Identity.Documents.BR
   alias Fides.Identity.Documents.CO
