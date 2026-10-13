@@ -21,6 +21,7 @@ defmodule FidesWeb do
     deps: [
       Fides.Platform,
       Fides.Accounts,
+      Fides.Identity,
       Fides.Origination,
       Fides.Countries,
       Fides.Banking,
